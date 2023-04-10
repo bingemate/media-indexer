@@ -20,12 +20,7 @@ var rootCmd = &cobra.Command{
 			_ = cmd.Help()
 			os.Exit(1)
 		}
-		log.Printf("Source: %s", source)
-		log.Printf("Destination: %s", destination)
-		err := internal.Process(source, destination)
-		if err != nil {
-			log.Fatal(err)
-		}
+		main(source, destination)
 	},
 }
 
@@ -38,4 +33,14 @@ func ExecuteCli() {
 func init() {
 	rootCmd.Flags().StringP("source", "s", "", "Source directory")
 	rootCmd.Flags().StringP("destination", "d", "", "Destination directory")
+}
+
+func main(source, destination string) {
+	log.Printf("Source: %s\n", source)
+	log.Printf("Destination: %s\n", destination)
+	err := internal.ScanMovieFolder(source, destination)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("Done")
 }

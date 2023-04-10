@@ -1,7 +1,6 @@
-package sanitizer
+package pkg
 
 import (
-	"fmt"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -19,10 +18,10 @@ var spaceRegexes = []*regexp.Regexp{
 
 var nonASCIIRegex = regexp.MustCompile(`[^\x00-\x7F]+`) // regex pour remplacer les caractères non ASCII
 
-// var extractDateRegex = regexp.MustCompile(`^(.+?)(?:\s*\((\d{4})\))?[\s\._-]*[^\\\/]*$`) // Expression régulière pour extraire le nom et l'année du fichier
 var extractDateRegex = regexp.MustCompile(`^(.+?)(\d{4}?).*(\d{4}.*)?$`) // Expression régulière pour extraire le nom et l'année du fichier
 
-func SanitizeFilename(filename string) string {
+// SanitizeFilename sanitize a filename by removing non ASCII characters, removing non-relevant information, returning the name and the year
+func SanitizeFilename(filename string) (string, string) {
 	filename = strings.TrimSuffix(filename, filepath.Ext(filename))
 	for _, regex := range spaceRegexes {
 		filename = regex.ReplaceAllString(filename, " ")
@@ -39,10 +38,9 @@ func SanitizeFilename(filename string) string {
 
 	matches := extractDateRegex.FindStringSubmatch(filename)
 	if len(matches) < 3 {
-		return filename
+		return filename, ""
 	}
 	name := strings.TrimSpace(matches[1])
 	year := strings.TrimSpace(matches[2])
-
-	return fmt.Sprintf("%s %s", name, year)
+	return name, year
 }
