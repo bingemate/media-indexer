@@ -6,13 +6,8 @@ import (
 	"os"
 )
 
-func InitLog() *os.File {
-	logFilePath := os.Getenv("LOG_FILE_PATH")
-	if logFilePath == "" {
-		logFilePath = "."
-	}
-	logFilePath += "/log.txt"
-	logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+func InitLog(logfile string) *os.File {
+	logFile, err := os.OpenFile(logfile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}

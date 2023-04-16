@@ -15,7 +15,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	logFile := initializers.InitLog()
+	logFile := initializers.InitLog(env.LogFile)
 	defer logFile.Close()
 	if *server {
 		cmd.Serve(env)
