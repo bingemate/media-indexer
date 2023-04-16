@@ -29,10 +29,15 @@ func NewMovieScanner(source, destination, tmdbApiKey string) *MovieScanner {
 }
 
 func (s *MovieScanner) ScanMovieFolder() ([]MovieScannerResult, error) {
+	log.Printf("Scanning %s for movies...", s.source)
 	sourceTree, err := pkg.BuildTree(s.source)
 	if err != nil {
+		log.Printf("Failed to scan source tree: %v", err)
 		return nil, err
 	}
+
+	log.Printf("Scanning %d files in %s...", len(sourceTree), s.source)
+
 	var wg sync.WaitGroup
 	var atomicMediaList = pkg.NewAtomicMediaList()
 	wg.Add(len(sourceTree))
@@ -40,6 +45,9 @@ func (s *MovieScanner) ScanMovieFolder() ([]MovieScannerResult, error) {
 	for _, mediaFile := range sourceTree {
 		go func(mediaFile pkg.MediaFile) {
 			defer wg.Done()
+
+			log.Printf("Searching for movie information for file %s...", mediaFile.Filename)
+
 			Media, ok := searchMovie(&mediaFile, s.mediaClient)
 			if !ok {
 				return
@@ -50,7 +58,9 @@ func (s *MovieScanner) ScanMovieFolder() ([]MovieScannerResult, error) {
 
 	wg.Wait()
 
-	var result []MovieScannerResult
+	log.Println("Movie scan complete.")
+
+	var result = make([]MovieScannerResult, 0)
 	for mediaFile, media := range atomicMediaList.GetAll() {
 		result = append(result, MovieScannerResult{
 			Source:      mediaFile.Filename,
@@ -59,7 +69,17 @@ func (s *MovieScanner) ScanMovieFolder() ([]MovieScannerResult, error) {
 		})
 	}
 
-	return result, moveMedias(atomicMediaList.GetAll(), s.destination)
+	log.Printf("Moving %d movies to %s...", len(result), s.destination)
+
+	err = moveMovies(atomicMediaList.GetAll(), s.destination)
+	if err != nil {
+		log.Printf("Failed to move movies to %s: %v", s.destination, err)
+		return nil, err
+	}
+
+	log.Printf("Successfully moved %d movies to %s.", len(result), s.destination)
+
+	return result, nil
 }
 
 func searchMovie(mediaFile *pkg.MediaFile, client pkg.MediaClient) (pkg.Movie, bool) {
@@ -71,7 +91,7 @@ func searchMovie(mediaFile *pkg.MediaFile, client pkg.MediaClient) (pkg.Movie, b
 	return result, true
 }
 
-func moveMedias(mediaList map[pkg.MediaFile]pkg.Movie, destination string) error {
+func moveMovies(mediaList map[pkg.MediaFile]pkg.Movie, destination string) error {
 	if !pkg.IsDirectoryExists(destination) {
 		return errors.New("destination directory does not exists")
 	}

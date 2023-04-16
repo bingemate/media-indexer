@@ -40,7 +40,8 @@ func init() {
 func main(source, destination, tmdbApiKey string) {
 	log.Printf("Source: %s\n", source)
 	log.Printf("Destination: %s\n", destination)
-	err := features.ScanMovieFolder(source, destination, tmdbApiKey)
+	var movieScanner = features.NewMovieScanner(source, destination, tmdbApiKey)
+	_, err := movieScanner.ScanMovieFolder()
 	if err != nil {
 		log.Fatal(err)
 	}

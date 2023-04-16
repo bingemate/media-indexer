@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 )
@@ -29,7 +30,7 @@ func BuildTree(source string) ([]MediaFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	var mediaFiles []MediaFile
+	var mediaFiles = make([]MediaFile, 0)
 	for _, entry := range entries {
 		if entry.IsDir() {
 			recursiveMediaFiles, err := BuildTree(source + "/" + entry.Name())
@@ -49,7 +50,7 @@ func BuildTree(source string) ([]MediaFile, error) {
 				}
 				mediaFiles = append(mediaFiles, mediaFile)
 			} else {
-				fmt.Println("Not allowed extension: ", entry.Name())
+				log.Println("Not allowed extension: ", entry.Name())
 			}
 		}
 	}

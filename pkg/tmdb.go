@@ -13,14 +13,29 @@ const (
 	MOVIE
 )
 
-type Movie struct {
+type Media struct {
 	Type        int
 	ID          int
 	Name        string
 	ReleaseDate string
 }
 
-func (m *Movie) Year() string {
+type Movie struct {
+	Media
+}
+
+type TVShow struct {
+	Media
+}
+
+type TVEpisode struct {
+	Media
+	TvShowID int
+	Season   int
+	Episode  int
+}
+
+func (m *Media) Year() string {
 	return strings.Split(m.ReleaseDate, "-")[0]
 }
 
@@ -57,7 +72,7 @@ func NewAtomicMediaList() *AtomicMediaList {
 
 type MediaClient interface {
 	SearchMovie(query string, year string) (Movie, error)
-	SearchTVShow(query string, season, episode int) (Movie, error)
+	SearchTVShow(query string, season, episode int) (TVEpisode, error)
 }
 
 type mediaClient struct {
@@ -91,14 +106,16 @@ func (m *mediaClient) SearchMovie(query string, year string) (Movie, error) {
 	}
 	var media = results.Results[0]
 	return Movie{
-		Type:        MOVIE,
-		ID:          media.ID,
-		Name:        media.Title,
-		ReleaseDate: media.ReleaseDate,
+		Media: Media{
+			Type:        MOVIE,
+			ID:          media.ID,
+			Name:        media.Title,
+			ReleaseDate: media.ReleaseDate,
+		},
 	}, nil
 }
 
-func (m *mediaClient) SearchTVShow(query string, season, episode int) (Movie, error) {
+func (m *mediaClient) SearchTVShow(query string, season, episode int) (TVEpisode, error) {
 	//TODO implement me
 	panic("implement me")
 }
