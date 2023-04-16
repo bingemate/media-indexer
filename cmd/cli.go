@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/bingemate/media-indexer/internal"
+	"github.com/bingemate/media-indexer/internal/features"
 	"github.com/spf13/cobra"
 	"log"
 	"os"
@@ -40,7 +40,7 @@ func init() {
 func main(source, destination, tmdbApiKey string) {
 	log.Printf("Source: %s\n", source)
 	log.Printf("Destination: %s\n", destination)
-	err := internal.ScanMovieFolder(source, destination, tmdbApiKey)
+	err := features.ScanMovieFolder(source, destination, tmdbApiKey)
 	if err != nil {
 		log.Fatal(err)
 	}
