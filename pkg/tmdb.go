@@ -13,36 +13,36 @@ const (
 	MOVIE
 )
 
-type Media struct {
+type Movie struct {
 	Type        int
 	ID          int
 	Name        string
 	ReleaseDate string
 }
 
-func (m *Media) Year() string {
+func (m *Movie) Year() string {
 	return strings.Split(m.ReleaseDate, "-")[0]
 }
 
 type AtomicMediaList struct {
-	mediaList map[MediaFile]Media
+	mediaList map[MediaFile]Movie
 	lock      sync.Mutex
 }
 
-func (a *AtomicMediaList) LinkMediaFile(mediaFile MediaFile, media Media) {
+func (a *AtomicMediaList) LinkMediaFile(mediaFile MediaFile, media Movie) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	a.mediaList[mediaFile] = media
 }
 
-func (a *AtomicMediaList) Get(mediaFile MediaFile) (Media, bool) {
+func (a *AtomicMediaList) Get(mediaFile MediaFile) (Movie, bool) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	media, ok := a.mediaList[mediaFile]
 	return media, ok
 }
 
-func (a *AtomicMediaList) GetAll() map[MediaFile]Media {
+func (a *AtomicMediaList) GetAll() map[MediaFile]Movie {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	return a.mediaList
@@ -50,14 +50,14 @@ func (a *AtomicMediaList) GetAll() map[MediaFile]Media {
 
 func NewAtomicMediaList() *AtomicMediaList {
 	return &AtomicMediaList{
-		mediaList: make(map[MediaFile]Media),
+		mediaList: make(map[MediaFile]Movie),
 		lock:      sync.Mutex{},
 	}
 }
 
 type MediaClient interface {
-	SearchMovie(query string, year string) (Media, error)
-	SearchTVShow(query string, season, episode int) (Media, error)
+	SearchMovie(query string, year string) (Movie, error)
+	SearchTVShow(query string, season, episode int) (Movie, error)
 }
 
 type mediaClient struct {
@@ -76,7 +76,7 @@ func NewMediaClient(apiKey string) MediaClient {
 	}
 }
 
-func (m *mediaClient) SearchMovie(query string, year string) (Media, error) {
+func (m *mediaClient) SearchMovie(query string, year string) (Movie, error) {
 	var options = make(map[string]string)
 	options["language"] = "fr"
 	if year != "" {
@@ -84,13 +84,13 @@ func (m *mediaClient) SearchMovie(query string, year string) (Media, error) {
 	}
 	results, err := m.tmdbClient.SearchMovie(query, options)
 	if err != nil {
-		return Media{}, err
+		return Movie{}, err
 	}
 	if results.TotalResults == 0 {
-		return Media{}, errors.New("no results found")
+		return Movie{}, errors.New("no results found")
 	}
 	var media = results.Results[0]
-	return Media{
+	return Movie{
 		Type:        MOVIE,
 		ID:          media.ID,
 		Name:        media.Title,
@@ -98,7 +98,7 @@ func (m *mediaClient) SearchMovie(query string, year string) (Media, error) {
 	}, nil
 }
 
-func (m *mediaClient) SearchTVShow(query string, season, episode int) (Media, error) {
+func (m *mediaClient) SearchTVShow(query string, season, episode int) (Movie, error) {
 	//TODO implement me
 	panic("implement me")
 }
