@@ -1,16 +1,30 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"github.com/bingemate/media-indexer/cmd"
+	"github.com/bingemate/media-indexer/initializers"
 	"io"
 	"log"
 	"os"
 )
 
 func main() {
+	var server = flag.Bool("serve", false, "Run server")
+	flag.Parse()
+	env, err := initializers.LoadEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
 	logFile := initLog()
 	defer logFile.Close()
-	cmd.ExecuteCli()
+	if *server {
+		cmd.Serve(env)
+	} else {
+		fmt.Println("Running CLI")
+		//cmd.ExecuteCli()
+	}
 }
 
 func initLog() *os.File {

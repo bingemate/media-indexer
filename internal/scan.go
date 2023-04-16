@@ -3,22 +3,17 @@ package internal
 import (
 	"errors"
 	"fmt"
-	"github.com/bingemate/media-indexer/conf"
 	"github.com/bingemate/media-indexer/pkg"
 	"log"
 	"sync"
 )
 
-func ScanMovieFolder(source, destination string) error {
-	env, err := conf.LoadEnv()
-	if err != nil {
-		return err
-	}
+func ScanMovieFolder(source, destination, tmdbApiKey string) error {
 	sourceTree, err := pkg.BuildTree(source)
 	if err != nil {
 		return err
 	}
-	var client = pkg.NewMediaClient(env.TMDBApiKey)
+	var client = pkg.NewMediaClient(tmdbApiKey)
 	var wg sync.WaitGroup
 	var atomicMediaList = pkg.NewAtomicMediaList()
 	wg.Add(len(sourceTree))

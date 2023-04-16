@@ -15,12 +15,13 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		source, _ := cmd.Flags().GetString("source")
 		destination, _ := cmd.Flags().GetString("destination")
+		tmdbApiKey, _ := cmd.Flags().GetString("tmdb-api-key")
 		if strings.TrimSpace(source) == "" || strings.TrimSpace(destination) == "" {
 			log.Println("Source and destination are required")
 			_ = cmd.Help()
 			os.Exit(1)
 		}
-		main(source, destination)
+		main(source, destination, tmdbApiKey)
 	},
 }
 
@@ -33,12 +34,13 @@ func ExecuteCli() {
 func init() {
 	rootCmd.Flags().StringP("source", "s", "", "Source directory")
 	rootCmd.Flags().StringP("destination", "d", "", "Destination directory")
+	rootCmd.Flags().StringP("tmdb-api-key", "t", "", "TMDB API Key")
 }
 
-func main(source, destination string) {
+func main(source, destination, tmdbApiKey string) {
 	log.Printf("Source: %s\n", source)
 	log.Printf("Destination: %s\n", destination)
-	err := internal.ScanMovieFolder(source, destination)
+	err := internal.ScanMovieFolder(source, destination, tmdbApiKey)
 	if err != nil {
 		log.Fatal(err)
 	}
