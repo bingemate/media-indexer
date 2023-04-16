@@ -1,6 +1,10 @@
 package pkg
 
-import "os"
+import (
+	"io"
+	"log"
+	"os"
+)
 
 func IsDirectoryExists(path string) bool {
 	info, err := os.Stat(path)
@@ -13,5 +17,34 @@ func IsDirectoryExists(path string) bool {
 }
 
 func MoveFile(source, destination string) error {
-	return os.Rename(source, destination)
+	log.Println("Opening source file:", source)
+	srcFile, err := os.Open(source)
+	if err != nil {
+		log.Println("Error opening source file:", err)
+		return err
+	}
+	defer srcFile.Close()
+
+	log.Println("Creating destination file:", destination)
+	destFile, err := os.Create(destination)
+	if err != nil {
+		log.Println("Error creating destination file:", err)
+		return err
+	}
+	defer destFile.Close()
+
+	log.Println("Copying file contents from source to destination")
+	if _, err := io.Copy(destFile, srcFile); err != nil {
+		log.Println("Error copying file contents:", err)
+		return err
+	}
+
+	log.Println("Removing source file:", source)
+	if err := os.Remove(source); err != nil {
+		log.Println("Error removing source file:", err)
+		return err
+	}
+
+	log.Println("File move completed successfully")
+	return nil
 }
