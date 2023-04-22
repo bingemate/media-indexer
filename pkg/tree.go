@@ -23,14 +23,14 @@ func (m MovieFile) String() string {
 type TVShowFile struct {
 	Path          string
 	SanitizedName string
-	Season        string
-	Episode       string
+	Season        int
+	Episode       int
 	Filename      string
 	Extension     string
 }
 
 func (t TVShowFile) String() string {
-	return fmt.Sprintf("%-100s --> %s S%sE%s", t.Filename, t.SanitizedName, t.Season, t.Episode)
+	return fmt.Sprintf("%-100s --> %s S%.2dE%.2d", t.Filename, t.SanitizedName, t.Season, t.Episode)
 }
 
 var allowedExtension = []string{
