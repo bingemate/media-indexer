@@ -22,9 +22,32 @@ type MovieScannerResult struct {
 	Movie       pkg.Movie // Movie details returned by TMDB.
 }
 
+// TVScanner represents a struct that scans TV show folders to search for TV show files and move them.
+type TVScanner struct {
+	source      string          // Source directory path to scan for TV shows.
+	destination string          // Destination directory path to move the found TV shows.
+	mediaClient pkg.MediaClient // Media client object to search for TV shows on TMDB.
+}
+
+// TVScannerResult represents a struct that holds the results of scanning and moving TV show files.
+type TVScannerResult struct {
+	Source      string        // Source filename.
+	Destination string        // Full destination path of the moved file.
+	TVEpisode   pkg.TVEpisode // TV episode details returned by TMDB.
+}
+
 // NewMovieScanner returns a new instance of MovieScanner with given source directory, target directory, and TMDB API key.
 func NewMovieScanner(source, destination, tmdbAPIKey string) *MovieScanner {
 	return &MovieScanner{
+		source:      source,
+		destination: destination,
+		mediaClient: pkg.NewMediaClient(tmdbAPIKey),
+	}
+}
+
+// NewTVScanner returns a new instance of TVScanner with given source directory, target directory, and TMDB API key.
+func NewTVScanner(source, destination, tmdbAPIKey string) *TVScanner {
+	return &TVScanner{
 		source:      source,
 		destination: destination,
 		mediaClient: pkg.NewMediaClient(tmdbAPIKey),
