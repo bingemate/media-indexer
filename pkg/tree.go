@@ -20,6 +20,19 @@ func (m MovieFile) String() string {
 	return fmt.Sprintf("%-100s --> %s", m.Filename, m.SanitizedName)
 }
 
+type TVShowFile struct {
+	Path          string
+	SanitizedName string
+	Season        string
+	Episode       string
+	Filename      string
+	Extension     string
+}
+
+func (t TVShowFile) String() string {
+	return fmt.Sprintf("%-100s --> %s S%sE%s", t.Filename, t.SanitizedName, t.Season, t.Episode)
+}
+
 var allowedExtension = []string{
 	".mp4",
 	".mkv",
@@ -56,6 +69,48 @@ func BuildMovieTree(source string) ([]MovieFile, error) {
 		}
 	}
 	return mediaFiles, nil
+}
+
+// BuildTVShowTree recursively builds a tree of TV show files in the given source directory.
+func BuildTVShowTree(source string) ([]TVShowFile, error) {
+	// Read the directory entries from the source directory.
+	entries, err := os.ReadDir(source)
+	if err != nil {
+		return nil, err
+	}
+
+	// Initialize a slice to store the TV show files.
+	var tvShowFiles []TVShowFile
+
+	// Iterate over the entries in the source directory.
+	for _, entry := range entries {
+		// If the entry is a directory, recurse and add the resulting TV show files to the slice.
+		if entry.IsDir() {
+			recursiveTVShowFiles, err := BuildTVShowTree(filepath.Join(source, entry.Name()))
+			if err != nil {
+				return nil, err
+			}
+			tvShowFiles = append(tvShowFiles, recursiveTVShowFiles...)
+		} else {
+			// If the entry has an allowed extension, extract the TV show file information and add it to the slice.
+			if hasAllowedExtension(entry.Name()) {
+				var title, season, episode = SanitizeTVShowFilename(entry.Name())
+				tvShowFile := TVShowFile{
+					Path:          source,
+					SanitizedName: title,
+					Season:        season,
+					Episode:       episode,
+					Filename:      entry.Name(),
+					Extension:     getExtension(entry.Name()),
+				}
+				tvShowFiles = append(tvShowFiles, tvShowFile)
+			} else {
+				log.Println("Not allowed extension: ", entry.Name())
+			}
+		}
+	}
+
+	return tvShowFiles, nil
 }
 
 func getExtension(name string) string {
