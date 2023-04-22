@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"github.com/bingemate/media-indexer/initializers"
 	"github.com/bingemate/media-indexer/internal/controllers"
+	"github.com/gin-gonic/gin"
 	"log"
 )
 
 func Serve(env initializers.Env) {
-	var engine = initializers.InitGinEngine(env)
+	var engine = gin.Default()
 	controllers.InitRouter(engine, env)
 	fmt.Println("Starting server on port", env.Port)
 	err := engine.Run(":" + env.Port)
