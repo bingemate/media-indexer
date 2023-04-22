@@ -38,7 +38,7 @@ func (s *MovieScanner) ScanMovieFolder() ([]MovieScannerResult, error) {
 	log.Printf("Scanning %s for movies...", s.source)
 
 	// Builds the directory tree from the source directory and returns an error if it fails
-	sourceTree, err := pkg.BuildTree(s.source)
+	sourceTree, err := pkg.BuildMovieTree(s.source)
 	if err != nil {
 		log.Printf("Failed to scan source tree: %v", err)
 		return nil, err
@@ -54,7 +54,7 @@ func (s *MovieScanner) ScanMovieFolder() ([]MovieScannerResult, error) {
 
 	// Iterates through each media file and spawns a goroutine to search its information
 	for _, mediaFile := range sourceTree {
-		go func(mediaFile pkg.MediaFile) {
+		go func(mediaFile pkg.MovieFile) {
 			defer wg.Done()
 
 			// Logs that the function is searching for movie information for the current file
@@ -105,7 +105,7 @@ func (s *MovieScanner) ScanMovieFolder() ([]MovieScannerResult, error) {
 }
 
 // searchMovie searches for a movie on TMDB using the media file name and year, returning the movie details and a boolean indicating whether it was found.
-func searchMovie(mediaFile *pkg.MediaFile, client pkg.MediaClient) (pkg.Movie, bool) {
+func searchMovie(mediaFile *pkg.MovieFile, client pkg.MediaClient) (pkg.Movie, bool) {
 	result, err := client.SearchMovie(mediaFile.SanitizedName, mediaFile.Year)
 	if err != nil {
 		log.Printf("Error while media search on %s : %s. Sanitized name was : %s", mediaFile.Filename, err.Error(), mediaFile.SanitizedName)
@@ -116,7 +116,7 @@ func searchMovie(mediaFile *pkg.MediaFile, client pkg.MediaClient) (pkg.Movie, b
 
 // moveMovies moves the media files to the destination directory path provided as argument.
 // It returns an error if the destination directory does not exist or if there was an error while moving the file.
-func moveMovies(mediaList map[pkg.MediaFile]pkg.Movie, destination string) error {
+func moveMovies(mediaList map[pkg.MovieFile]pkg.Movie, destination string) error {
 	if !pkg.IsDirectoryExists(destination) {
 		return errors.New("destination directory does not exists")
 	}

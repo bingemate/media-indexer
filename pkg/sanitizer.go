@@ -20,8 +20,10 @@ var nonASCIIRegex = regexp.MustCompile(`[^\x00-\x7F]+`) // regex pour remplacer 
 
 var extractDateRegex = regexp.MustCompile(`^(.+?)(\d{4}?).*(\d{4}.*)?$`) // Expression régulière pour extraire le nom et l'année du fichier
 
-// SanitizeFilename sanitize a filename by removing non ASCII characters, removing non-relevant information, returning the name and the year
-func SanitizeFilename(filename string) (string, string) {
+var tvShowRegex = regexp.MustCompile(`^(.+)[sS](\d+)?[eE](\d+).*$`) // regex to extract title, season number, and episode number
+
+// SanitizeMovieFilename sanitize a movie filename by removing non ASCII characters, removing non-relevant information, returning the name and the year
+func SanitizeMovieFilename(filename string) (string, string) {
 	filename = strings.TrimSuffix(filename, filepath.Ext(filename))
 	for _, regex := range spaceRegexes {
 		filename = regex.ReplaceAllString(filename, " ")

@@ -40,24 +40,24 @@ func (m *Media) Year() string {
 }
 
 type AtomicMediaList struct {
-	mediaList map[MediaFile]Movie
+	mediaList map[MovieFile]Movie
 	lock      sync.Mutex
 }
 
-func (a *AtomicMediaList) LinkMediaFile(mediaFile MediaFile, media Movie) {
+func (a *AtomicMediaList) LinkMediaFile(mediaFile MovieFile, media Movie) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	a.mediaList[mediaFile] = media
 }
 
-func (a *AtomicMediaList) Get(mediaFile MediaFile) (Movie, bool) {
+func (a *AtomicMediaList) Get(mediaFile MovieFile) (Movie, bool) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	media, ok := a.mediaList[mediaFile]
 	return media, ok
 }
 
-func (a *AtomicMediaList) GetAll() map[MediaFile]Movie {
+func (a *AtomicMediaList) GetAll() map[MovieFile]Movie {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	return a.mediaList
@@ -65,7 +65,7 @@ func (a *AtomicMediaList) GetAll() map[MediaFile]Movie {
 
 func NewAtomicMediaList() *AtomicMediaList {
 	return &AtomicMediaList{
-		mediaList: make(map[MediaFile]Movie),
+		mediaList: make(map[MovieFile]Movie),
 		lock:      sync.Mutex{},
 	}
 }
