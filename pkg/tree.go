@@ -44,7 +44,7 @@ func BuildMovieTree(source string) ([]MovieFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	var mediaFiles []MovieFile
+	var mediaFiles = make([]MovieFile, 0)
 	for _, entry := range entries {
 		if entry.IsDir() {
 			recursiveMediaFiles, err := BuildMovieTree(filepath.Join(source, entry.Name()))
@@ -80,7 +80,7 @@ func BuildTVShowTree(source string) ([]TVShowFile, error) {
 	}
 
 	// Initialize a slice to store the TV show files.
-	var tvShowFiles []TVShowFile
+	var tvShowFiles = make([]TVShowFile, 0)
 
 	// Iterate over the entries in the source directory.
 	for _, entry := range entries {
