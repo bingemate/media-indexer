@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 func IsDirectoryExists(path string) bool {
@@ -24,6 +25,13 @@ func MoveFile(source, destination string) error {
 		return err
 	}
 	defer srcFile.Close()
+
+	destDir := filepath.Dir(destination)
+	log.Println("Creating destination directory:", destDir)
+	if err := os.MkdirAll(destDir, os.ModePerm); err != nil {
+		log.Println("Error creating destination directory:", err)
+		return err
+	}
 
 	log.Println("Creating destination file:", destination)
 	destFile, err := os.Create(destination)
