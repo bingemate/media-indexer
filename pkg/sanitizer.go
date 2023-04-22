@@ -46,3 +46,37 @@ func SanitizeMovieFilename(filename string) (string, string) {
 	year := strings.TrimSpace(matches[2])
 	return name, year
 }
+
+// SanitizeTVShowFilename separates a TV show filename into title, season number, and episode number
+func SanitizeTVShowFilename(filename string) (string, string, string) {
+	filename = strings.TrimSuffix(filename, filepath.Ext(filename))
+	for _, regex := range spaceRegexes {
+		filename = regex.ReplaceAllString(filename, " ")
+	}
+	filename = nonASCIIRegex.ReplaceAllStringFunc(filename, func(s string) string {
+		return strings.ToLower(strings.TrimFunc(s, func(r rune) bool {
+			return !unicode.IsLetter(r)
+		}))
+	})
+
+	for _, regex := range deleteRegexes {
+		filename = regex.ReplaceAllString(filename, "")
+	}
+
+	matches := tvShowRegex.FindStringSubmatch(filename)
+	if len(matches) < 3 {
+		return filename, "", ""
+	}
+
+	title := strings.TrimSpace(matches[1])
+	seasonNumberStr := matches[2]
+	episodeNumberStr := matches[3]
+
+	// Default to season 1 if no season number is specified
+	seasonNumber := "1"
+	if seasonNumberStr != "" {
+		seasonNumber = seasonNumberStr
+	}
+
+	return title, seasonNumber, episodeNumberStr
+}
