@@ -8,5 +8,6 @@ import (
 
 func InitRouter(engine *gin.Engine, env initializers.Env) {
 	var movieScanner = features.NewMovieScanner(env.MovieSourceFolder, env.MovieTargetFolder, env.TMDBApiKey)
-	InitScanController(engine.Group("/scan"), movieScanner)
+	var tvScanner = features.NewTVScanner(env.TvSourceFolder, env.TvTargetFolder, env.TMDBApiKey)
+	InitScanController(engine.Group("/scan"), movieScanner, tvScanner)
 }
