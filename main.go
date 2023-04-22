@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/bingemate/media-indexer/cmd"
 	"github.com/bingemate/media-indexer/initializers"
 	"log"
@@ -18,9 +17,10 @@ func main() {
 	logFile := initializers.InitLog(env.LogFile)
 	defer logFile.Close()
 	if *server {
+		log.Println("Starting server mode...")
 		cmd.Serve(env)
 	} else {
-		fmt.Println("Running CLI")
-		//cmd.ExecuteCli()
+		log.Println("Starting cli mode...")
+		cmd.ExecuteCli()
 	}
 }
