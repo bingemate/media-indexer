@@ -7,14 +7,7 @@ import (
 	"sync"
 )
 
-const (
-	TV_SHOW = iota
-	TV_EPISODE
-	MOVIE
-)
-
 type Media struct {
-	Type        int
 	ID          int
 	Name        string
 	ReleaseDate string
@@ -24,15 +17,12 @@ type Movie struct {
 	Media
 }
 
-type TVShow struct {
-	Media
-}
-
 type TVEpisode struct {
 	Media
-	TvShowID int
-	Season   int
-	Episode  int
+	TvShowID      int
+	TvReleaseDate string
+	Season        int
+	Episode       int
 }
 
 func (m *Media) Year() string {
@@ -107,7 +97,6 @@ func (m *mediaClient) SearchMovie(query string, year string) (Movie, error) {
 	var media = results.Results[0]
 	return Movie{
 		Media: Media{
-			Type:        MOVIE,
 			ID:          media.ID,
 			Name:        media.Title,
 			ReleaseDate: media.ReleaseDate,
@@ -116,6 +105,28 @@ func (m *mediaClient) SearchMovie(query string, year string) (Movie, error) {
 }
 
 func (m *mediaClient) SearchTVShow(query string, season, episode int) (TVEpisode, error) {
-	//TODO implement me
-	panic("implement me")
+	var options = make(map[string]string)
+	options["language"] = "fr"
+	show, err := m.tmdbClient.SearchTv(query, options)
+	if err != nil {
+		return TVEpisode{}, err
+	}
+	if show.TotalResults == 0 {
+		return TVEpisode{}, errors.New("no results found")
+	}
+	episodeInfo, err := m.tmdbClient.GetTvEpisodeInfo(show.Results[0].ID, season, episode, options)
+	if err != nil {
+		return TVEpisode{}, err
+	}
+	return TVEpisode{
+		Media: Media{
+			ID:          episodeInfo.ID,
+			ReleaseDate: episodeInfo.AirDate,
+			Name:        show.Results[0].Name,
+		},
+		TvShowID:      show.Results[0].ID,
+		TvReleaseDate: show.Results[0].FirstAirDate,
+		Season:        season,
+		Episode:       episode,
+	}, nil
 }
