@@ -29,33 +29,64 @@ func (m *Media) Year() string {
 	return strings.Split(m.ReleaseDate, "-")[0]
 }
 
-type AtomicMediaList struct {
+type AtomicMovieList struct {
 	mediaList map[MovieFile]Movie
 	lock      sync.Mutex
 }
 
-func (a *AtomicMediaList) LinkMediaFile(mediaFile MovieFile, media Movie) {
+type AtomicTVEpisodeList struct {
+	mediaList map[TVShowFile]TVEpisode
+	lock      sync.Mutex
+}
+
+func (a *AtomicMovieList) LinkMediaFile(mediaFile MovieFile, media Movie) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	a.mediaList[mediaFile] = media
 }
 
-func (a *AtomicMediaList) Get(mediaFile MovieFile) (Movie, bool) {
+func (a *AtomicMovieList) Get(mediaFile MovieFile) (Movie, bool) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	media, ok := a.mediaList[mediaFile]
 	return media, ok
 }
 
-func (a *AtomicMediaList) GetAll() map[MovieFile]Movie {
+func (a *AtomicMovieList) GetAll() map[MovieFile]Movie {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	return a.mediaList
 }
 
-func NewAtomicMediaList() *AtomicMediaList {
-	return &AtomicMediaList{
+func NewAtomicMovieList() *AtomicMovieList {
+	return &AtomicMovieList{
 		mediaList: make(map[MovieFile]Movie),
+		lock:      sync.Mutex{},
+	}
+}
+
+func (a *AtomicTVEpisodeList) LinkMediaFile(mediaFile TVShowFile, media TVEpisode) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
+	a.mediaList[mediaFile] = media
+}
+
+func (a *AtomicTVEpisodeList) Get(mediaFile TVShowFile) (TVEpisode, bool) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
+	media, ok := a.mediaList[mediaFile]
+	return media, ok
+}
+
+func (a *AtomicTVEpisodeList) GetAll() map[TVShowFile]TVEpisode {
+	a.lock.Lock()
+	defer a.lock.Unlock()
+	return a.mediaList
+}
+
+func NewAtomicTVEpisodeList() *AtomicTVEpisodeList {
+	return &AtomicTVEpisodeList{
+		mediaList: make(map[TVShowFile]TVEpisode),
 		lock:      sync.Mutex{},
 	}
 }
