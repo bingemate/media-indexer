@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/bingemate/media-indexer/pkg"
 	"log"
+	"path"
+	"path/filepath"
 	"sync"
 )
 
@@ -70,9 +72,9 @@ func (s *MovieScanner) ScanMovieFolder() ([]MovieScannerResult, error) {
 	// Logs the number of files found in the source directory
 	log.Printf("Scanning %d files in %s...", len(sourceTree), s.source)
 
-	// Initializes a WaitGroup and an AtomicMediaList
+	// Initializes a WaitGroup and an AtomicMovieList
 	var wg sync.WaitGroup
-	var atomicMediaList = pkg.NewAtomicMediaList()
+	var atomicMediaList = pkg.NewAtomicMovieList()
 	wg.Add(len(sourceTree))
 
 	// Iterates through each media file and spawns a goroutine to search its information
@@ -83,12 +85,12 @@ func (s *MovieScanner) ScanMovieFolder() ([]MovieScannerResult, error) {
 			// Logs that the function is searching for movie information for the current file
 			log.Printf("Searching for movie information for file %s...", mediaFile.Filename)
 
-			// Searches for the movie information for the current media file and adds the result to the AtomicMediaList
-			Media, ok := searchMovie(&mediaFile, s.mediaClient)
+			// Searches for the movie information for the current media file and adds the result to the AtomicMovieList
+			media, ok := searchMovie(&mediaFile, s.mediaClient)
 			if !ok {
 				return
 			}
-			atomicMediaList.LinkMediaFile(mediaFile, Media)
+			atomicMediaList.LinkMediaFile(mediaFile, media)
 		}(mediaFile)
 	}
 
@@ -101,11 +103,11 @@ func (s *MovieScanner) ScanMovieFolder() ([]MovieScannerResult, error) {
 	// Initializes an empty slice of MovieScannerResult
 	var result = make([]MovieScannerResult, 0)
 
-	// Iterates through each media file and its corresponding movie information in the AtomicMediaList and adds it to the result slice
+	// Iterates through each media file and its corresponding movie information in the AtomicMovieList and adds it to the result slice
 	for mediaFile, media := range atomicMediaList.GetAll() {
 		result = append(result, MovieScannerResult{
 			Source:      mediaFile.Filename,
-			Destination: fmt.Sprintf("%s - %s%s", media.Name, media.Year(), mediaFile.Extension),
+			Destination: buildMovieFilename(media, mediaFile.Extension),
 			Movie:       media,
 		})
 	}
@@ -127,12 +129,96 @@ func (s *MovieScanner) ScanMovieFolder() ([]MovieScannerResult, error) {
 	return result, nil
 }
 
+// ScanTVFolder scans the source directory for TV shows and moves them to the destination directory.
+// It returns a slice of TVScannerResult and an error if there is any.
+func (s *TVScanner) ScanTVFolder() ([]TVScannerResult, error) {
+	// Logs that the function is scanning the source directory for TV shows
+	log.Printf("Scanning %s for TV shows...", s.source)
+
+	// Builds the directory tree from the source directory and returns an error if it fails
+	sourceTree, err := pkg.BuildTVShowTree(s.source)
+	if err != nil {
+		log.Printf("Failed to scan source tree: %v", err)
+		return nil, err
+	}
+
+	// Logs the number of files found in the source directory
+	log.Printf("Scanning %d files in %s...", len(sourceTree), s.source)
+
+	// Initializes a WaitGroup and an AtomicMovieList
+	var wg sync.WaitGroup
+	var atomicMediaList = pkg.NewAtomicTVEpisodeList()
+	wg.Add(len(sourceTree))
+
+	// Iterates through each media file and spawns a goroutine to search its information
+	for _, mediaFile := range sourceTree {
+		go func(mediaFile pkg.TVShowFile) {
+			defer wg.Done()
+
+			// Logs that the function is searching for TV show information for the current file
+			log.Printf("Searching for TV show information for file %s...", mediaFile.Filename)
+
+			// Searches for the TV show information for the current media file and adds the result to the AtomicMovieList
+			media, ok := searchTVEpisode(&mediaFile, s.mediaClient)
+			if !ok {
+				return
+			}
+			log.Printf("Found TV show information for file %s:", mediaFile.Filename)
+			log.Println(media)
+			atomicMediaList.LinkMediaFile(mediaFile, media)
+		}(mediaFile)
+	}
+
+	// Waits for all goroutines to finish
+	wg.Wait()
+
+	// Logs that the TV show scan is complete
+	log.Println("TV show scan complete.")
+
+	// Initializes an empty slice of TVScannerResult
+	var result = make([]TVScannerResult, 0)
+
+	// Iterates through each media file and its corresponding TV show information in the AtomicMovieList and adds it to the result slice
+	for mediaFile, media := range atomicMediaList.GetAll() {
+		result = append(result, TVScannerResult{
+			Source:      mediaFile.Filename,
+			Destination: filepath.Join(media.Name, buildTVEpisodeFilename(media, mediaFile.Extension)),
+			TVEpisode:   media,
+		})
+	}
+
+	// Logs that it's moving the TV shows to the destination directory
+	log.Printf("Moving %d TV shows to %s...", len(result), s.destination)
+
+	// Moves the TV shows to the destination directory and returns an error if it fails
+	err = moveTVEpisodes(atomicMediaList.GetAll(), s.destination)
+	if err != nil {
+		log.Printf("Failed to move TV shows to %s: %v", s.destination, err)
+		return nil, err
+	}
+
+	// Logs that it has successfully moved the TV shows to the destination directory
+	log.Printf("Successfully moved %d TV shows to %s.", len(result), s.destination)
+
+	return result, nil
+}
+
 // searchMovie searches for a movie on TMDB using the media file name and year, returning the movie details and a boolean indicating whether it was found.
 func searchMovie(mediaFile *pkg.MovieFile, client pkg.MediaClient) (pkg.Movie, bool) {
 	result, err := client.SearchMovie(mediaFile.SanitizedName, mediaFile.Year)
 	if err != nil {
 		log.Printf("Error while media search on %s : %s. Sanitized name was : %s", mediaFile.Filename, err.Error(), mediaFile.SanitizedName)
 		return pkg.Movie{}, false
+	}
+	return result, true
+}
+
+// searchTVEpisode searches for a TV show on TMDB using the media file name and year, returning the TV show details and a boolean indicating whether it was found.
+func searchTVEpisode(mediaFile *pkg.TVShowFile, client pkg.MediaClient) (pkg.TVEpisode, bool) {
+	result, err := client.SearchTVShow(mediaFile.SanitizedName, mediaFile.Season, mediaFile.Episode)
+	if err != nil {
+		log.Printf("Error while media search on %s : %s. Sanitized name was : %s", mediaFile.Filename, err.Error(), mediaFile.SanitizedName)
+		return pkg.TVEpisode{}, false
 	}
 	return result, true
 }
@@ -144,8 +230,11 @@ func moveMovies(mediaList map[pkg.MovieFile]pkg.Movie, destination string) error
 		return errors.New("destination directory does not exists")
 	}
 	for mediaFile, media := range mediaList {
-		var source = fmt.Sprintf("%s/%s", mediaFile.Path, mediaFile.Filename)
-		var destination = fmt.Sprintf("%s/%s - %s%s", destination, media.Name, media.Year(), mediaFile.Extension)
+		var source = path.Join(mediaFile.Path, mediaFile.Filename)
+		var destination = path.Join(
+			destination,
+			buildMovieFilename(media, mediaFile.Extension),
+		)
 		err := pkg.MoveFile(source, destination)
 		if err != nil {
 			return err
@@ -153,4 +242,36 @@ func moveMovies(mediaList map[pkg.MovieFile]pkg.Movie, destination string) error
 		log.Printf("Processed %-60s - %s %s", mediaFile.Filename, media.Name, media.Year())
 	}
 	return nil
+}
+
+// moveTVEpisodes moves the media files to the destination directory path provided as argument.
+// It returns an error if the destination directory does not exist or if there was an error while moving the file.
+func moveTVEpisodes(mediaList map[pkg.TVShowFile]pkg.TVEpisode, destination string) error {
+	if !pkg.IsDirectoryExists(destination) {
+		return errors.New("destination directory does not exists")
+	}
+	for mediaFile, media := range mediaList {
+		var source = path.Join(mediaFile.Path, mediaFile.Filename)
+		var destination = path.Join(
+			destination,
+			media.Name,
+			buildTVEpisodeFilename(media, mediaFile.Extension),
+		)
+		err := pkg.MoveFile(source, destination)
+		if err != nil {
+			return err
+		}
+		log.Printf("Processed %-60s - %s %s", mediaFile.Filename, media.Name, media.Year())
+	}
+	return nil
+}
+
+// buildTVEpisodeFilename builds a TV show filename using the TV show name, season and episode number.
+func buildTVEpisodeFilename(media pkg.TVEpisode, extension string) string {
+	return fmt.Sprintf("%s - S%dE%.2d%s", media.Name, media.Season, media.Episode, extension)
+}
+
+// buildMovieFilename builds a movie filename using the movie name and year.
+func buildMovieFilename(media pkg.Movie, extension string) string {
+	return fmt.Sprintf("%s - %s%s", media.Name, media.Year(), extension)
 }
