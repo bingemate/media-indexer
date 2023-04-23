@@ -16,7 +16,7 @@ type MovieFile struct {
 	Extension     string
 }
 
-func (m MovieFile) String() string {
+func (m *MovieFile) String() string {
 	return fmt.Sprintf("%-100s --> %s", m.Filename, m.SanitizedName)
 }
 
