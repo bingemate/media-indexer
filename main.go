@@ -32,3 +32,28 @@ func main() {
 		cmd.ExecuteCli()
 	}
 }
+
+func test(db *gorm.DB) {
+	var mediaFile = repository.MediaFile{
+		Filename: "test.mkv",
+		Codec:    repository.H264,
+		Size:     1266565656.58,
+		Duration: 4600.58,
+		Subtitles: []repository.Subtitle{
+			{
+				Codec:    repository.SRT,
+				Language: "français",
+			},
+		},
+	}
+
+	/*	var subtitle = repository.Subtitle{
+		Codec:    repository.SRT,
+		Language: "français",
+	}*/
+
+	db.Create(&mediaFile)
+	var mediaFiles []repository.MediaFile
+	db.Joins(clause.Associations).Find(&mediaFiles)
+	log.Println(mediaFiles)
+}
