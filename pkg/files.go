@@ -56,3 +56,20 @@ func MoveFile(source, destination string) error {
 	log.Println("File move completed successfully")
 	return nil
 }
+
+func ClearFolderContent(source string) error {
+	log.Println("Clearing folder content:", source)
+	files, err := os.ReadDir(source)
+	if err != nil {
+		log.Println("Error clearing folder content:", err)
+		return err
+	}
+	for _, f := range files {
+		log.Println("Removing file:", f.Name())
+		if err := os.RemoveAll(filepath.Join(source, f.Name())); err != nil {
+			log.Println("Error removing file:", err)
+			return err
+		}
+	}
+	return nil
+}
