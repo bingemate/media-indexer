@@ -56,50 +56,40 @@ func NewTVScanner(source, destination, tmdbAPIKey string) *TVScanner {
 	}
 }
 
-// ScanMovieFolder scans the source directory for movies and moves them to the destination directory.
+// ScanMovies scans the source directory for movies and moves them to the destination directory.
 // It returns a slice of MovieScannerResult and an error if there is any.
-func (s *MovieScanner) ScanMovieFolder() ([]MovieScannerResult, error) {
-	// Logs that the function is scanning the source directory for movies
-	log.Printf("Scanning %s for movies...", s.source)
-
-	// Builds the directory tree from the source directory and returns an error if it fails
-	sourceTree, err := pkg.BuildMovieTree(s.source)
+func (s *MovieScanner) ScanMovies() (*[]MovieScannerResult, error) {
+	mediaFiles, err := s.scanMovieFolder()
 	if err != nil {
-		log.Printf("Failed to scan source tree: %v", err)
 		return nil, err
 	}
 
-	// Logs the number of files found in the source directory
-	log.Printf("Scanning %d files in %s...", len(sourceTree), s.source)
+	atomicMovieList := s.retrieveMovieList(mediaFiles)
 
-	// Initializes a WaitGroup and an AtomicMovieList
-	var wg sync.WaitGroup
-	var atomicMediaList = pkg.NewAtomicMovieList()
-	wg.Add(len(sourceTree))
+	result := s.buildMovieScannerResult(atomicMovieList)
 
-	// Iterates through each media file and spawns a goroutine to search its information
-	for _, mediaFile := range sourceTree {
-		go func(mediaFile pkg.MovieFile) {
-			defer wg.Done()
+	log.Printf("Moving %d movies to %s...", len(*result), s.destination)
 
-			// Logs that the function is searching for movie information for the current file
-			log.Printf("Searching for movie information for file %s...", mediaFile.Filename)
-
-			// Searches for the movie information for the current media file and adds the result to the AtomicMovieList
-			media, ok := searchMovie(&mediaFile, s.mediaClient)
-			if !ok {
-				return
-			}
-			atomicMediaList.LinkMediaFile(mediaFile, media)
-		}(mediaFile)
+	// Moves the movies to the destination directory and returns an error if it fails
+	err = moveMovies(atomicMovieList, s.destination)
+	if err != nil {
+		log.Printf("Failed to move movies to %s: %v", s.destination, err)
+		return nil, err
 	}
 
-	// Waits for all goroutines to finish
-	wg.Wait()
+	log.Printf("Successfully moved %d movies to %s.", len(*result), s.destination)
 
-	// Logs that the movie scan is complete
-	log.Println("Movie scan complete.")
+	err = pkg.ClearFolderContent(s.source)
+	if err != nil {
+		log.Printf("Failed to clear source folder content: %v", err)
+		return nil, err
+	}
 
+	// Returns the result slice and no error
+	return result, nil
+}
+
+func (s *MovieScanner) buildMovieScannerResult(atomicMediaList *pkg.AtomicMovieList) *[]MovieScannerResult {
 	// Initializes an empty slice of MovieScannerResult
 	var result = make([]MovieScannerResult, 0)
 
@@ -111,47 +101,110 @@ func (s *MovieScanner) ScanMovieFolder() ([]MovieScannerResult, error) {
 			Movie:       media,
 		})
 	}
-
-	// Logs that it's moving the movies to the destination directory
-	log.Printf("Moving %d movies to %s...", len(result), s.destination)
-
-	// Moves the movies to the destination directory and returns an error if it fails
-	err = moveMovies(atomicMediaList.GetAll(), s.destination)
-	if err != nil {
-		log.Printf("Failed to move movies to %s: %v", s.destination, err)
-		return nil, err
-	}
-
-	// Logs that it has successfully moved the movies to the destination directory
-	log.Printf("Successfully moved %d movies to %s.", len(result), s.destination)
-
-	// Returns the result slice and no error
-	return result, nil
+	return &result
 }
 
-// ScanTVFolder scans the source directory for TV shows and moves them to the destination directory.
-// It returns a slice of TVScannerResult and an error if there is any.
-func (s *TVScanner) ScanTVFolder() ([]TVScannerResult, error) {
-	// Logs that the function is scanning the source directory for TV shows
-	log.Printf("Scanning %s for TV shows...", s.source)
+func (s *MovieScanner) scanMovieFolder() (*[]pkg.MovieFile, error) {
+	// Logs that the function is scanning the source directory for movies
+	log.Printf("Scanning %s for movies...", s.source)
 
 	// Builds the directory tree from the source directory and returns an error if it fails
-	sourceTree, err := pkg.BuildTVShowTree(s.source)
+	mediaFiles, err := pkg.BuildMovieTree(s.source)
 	if err != nil {
 		log.Printf("Failed to scan source tree: %v", err)
 		return nil, err
 	}
 
-	// Logs the number of files found in the source directory
-	log.Printf("Scanning %d files in %s...", len(sourceTree), s.source)
+	log.Printf("Scanning %d files in %s...", len(mediaFiles), s.source)
+	return &mediaFiles, nil
+}
 
+func (s *MovieScanner) retrieveMovieList(mediaFiles *[]pkg.MovieFile) *pkg.AtomicMovieList {
+	// Initializes a WaitGroup and an AtomicMovieList
+	var wg sync.WaitGroup
+	var atomicMovieList = pkg.NewAtomicMovieList()
+	wg.Add(len(*mediaFiles))
+
+	// Iterates through each media file and spawns a goroutine to search its information
+	for _, mediaFile := range *mediaFiles {
+		go func(mediaFile pkg.MovieFile) {
+			defer wg.Done()
+
+			log.Printf("Searching for movie information for file %s...", mediaFile.Filename)
+
+			// Searches for the movie information for the current media file and adds the result to the AtomicMovieList
+			media, ok := searchMovie(&mediaFile, s.mediaClient)
+			if !ok {
+				log.Printf("Failed to find movie information for file %s.", mediaFile.Filename)
+				return
+			}
+			atomicMovieList.LinkMediaFile(mediaFile, media)
+		}(mediaFile)
+	}
+
+	// Waits for all goroutines to finish
+	wg.Wait()
+
+	log.Println("Movie scan complete.")
+	return atomicMovieList
+}
+
+// ScanTV scans the source directory for TV shows and moves them to the destination directory.
+// It returns a slice of TVScannerResult and an error if there is any.
+func (s *TVScanner) ScanTV() (*[]TVScannerResult, error) {
+	mediaFiles, err := s.scanTVFolder()
+	if err != nil {
+		return nil, err
+	}
+
+	atomicMediaList := s.retrieveTvList(mediaFiles)
+
+	result := s.buildTVScannerResult(atomicMediaList)
+
+	log.Printf("Moving %d TV shows to %s...", len(*result), s.destination)
+
+	// Moves the TV shows to the destination directory and returns an error if it fails
+	err = moveTVEpisodes(atomicMediaList, s.destination)
+	if err != nil {
+		log.Printf("Failed to move TV shows to %s: %v", s.destination, err)
+		return nil, err
+	}
+
+	log.Printf("Successfully moved %d TV shows to %s.", len(*result), s.destination)
+
+	err = pkg.ClearFolderContent(s.source)
+	if err != nil {
+		log.Printf("Failed to clear source folder content: %v", err)
+		return nil, err
+	}
+
+	// Returns the result slice and no error
+	return result, nil
+}
+
+func (s *TVScanner) buildTVScannerResult(atomicMediaList *pkg.AtomicTVEpisodeList) *[]TVScannerResult {
+	// Initializes an empty slice of TVScannerResult
+	var result = make([]TVScannerResult, 0)
+
+	// Iterates through each media file and its corresponding TV show information in the AtomicMovieList and adds it to the result slice
+	for mediaFile, media := range atomicMediaList.GetAll() {
+		result = append(result, TVScannerResult{
+			Source:      mediaFile.Filename,
+			Destination: filepath.Join(media.Name, buildTVEpisodeFilename(media, mediaFile.Extension)),
+			TVEpisode:   media,
+		})
+	}
+	return &result
+}
+
+func (s *TVScanner) retrieveTvList(mediaFiles *[]pkg.TVShowFile) *pkg.AtomicTVEpisodeList {
 	// Initializes a WaitGroup and an AtomicMovieList
 	var wg sync.WaitGroup
 	var atomicMediaList = pkg.NewAtomicTVEpisodeList()
-	wg.Add(len(sourceTree))
+	wg.Add(len(*mediaFiles))
 
 	// Iterates through each media file and spawns a goroutine to search its information
-	for _, mediaFile := range sourceTree {
+	for _, mediaFile := range *mediaFiles {
 		go func(mediaFile pkg.TVShowFile) {
 			defer wg.Done()
 
@@ -161,6 +214,7 @@ func (s *TVScanner) ScanTVFolder() ([]TVScannerResult, error) {
 			// Searches for the TV show information for the current media file and adds the result to the AtomicMovieList
 			media, ok := searchTVEpisode(&mediaFile, s.mediaClient)
 			if !ok {
+				log.Printf("Failed to find TV show information for file %s.", mediaFile.Filename)
 				return
 			}
 			log.Printf("Found TV show information for file %s:", mediaFile.Filename)
@@ -174,33 +228,22 @@ func (s *TVScanner) ScanTVFolder() ([]TVScannerResult, error) {
 
 	// Logs that the TV show scan is complete
 	log.Println("TV show scan complete.")
+	return atomicMediaList
+}
 
-	// Initializes an empty slice of TVScannerResult
-	var result = make([]TVScannerResult, 0)
+func (s *TVScanner) scanTVFolder() (*[]pkg.TVShowFile, error) {
+	// Logs that the function is scanning the source directory for TV shows
+	log.Printf("Scanning %s for TV shows...", s.source)
 
-	// Iterates through each media file and its corresponding TV show information in the AtomicMovieList and adds it to the result slice
-	for mediaFile, media := range atomicMediaList.GetAll() {
-		result = append(result, TVScannerResult{
-			Source:      mediaFile.Filename,
-			Destination: filepath.Join(media.Name, buildTVEpisodeFilename(media, mediaFile.Extension)),
-			TVEpisode:   media,
-		})
-	}
-
-	// Logs that it's moving the TV shows to the destination directory
-	log.Printf("Moving %d TV shows to %s...", len(result), s.destination)
-
-	// Moves the TV shows to the destination directory and returns an error if it fails
-	err = moveTVEpisodes(atomicMediaList.GetAll(), s.destination)
+	// Builds the directory tree from the source directory and returns an error if it fails
+	mediaFiles, err := pkg.BuildTVShowTree(s.source)
 	if err != nil {
-		log.Printf("Failed to move TV shows to %s: %v", s.destination, err)
+		log.Printf("Failed to scan source tree: %v", err)
 		return nil, err
 	}
 
-	// Logs that it has successfully moved the TV shows to the destination directory
-	log.Printf("Successfully moved %d TV shows to %s.", len(result), s.destination)
-
-	return result, nil
+	log.Printf("Scanning %d files in %s...", len(mediaFiles), s.source)
+	return &mediaFiles, nil
 }
 
 // searchMovie searches for a movie on TMDB using the media file name and year, returning the movie details and a boolean indicating whether it was found.
@@ -225,11 +268,11 @@ func searchTVEpisode(mediaFile *pkg.TVShowFile, client pkg.MediaClient) (pkg.TVE
 
 // moveMovies moves the media files to the destination directory path provided as argument.
 // It returns an error if the destination directory does not exist or if there was an error while moving the file.
-func moveMovies(mediaList map[pkg.MovieFile]pkg.Movie, destination string) error {
+func moveMovies(movieList *pkg.AtomicMovieList, destination string) error {
 	if !pkg.IsDirectoryExists(destination) {
 		return errors.New("destination directory does not exists")
 	}
-	for mediaFile, media := range mediaList {
+	for mediaFile, media := range movieList.GetAll() {
 		var source = path.Join(mediaFile.Path, mediaFile.Filename)
 		var destination = path.Join(
 			destination,
@@ -246,11 +289,11 @@ func moveMovies(mediaList map[pkg.MovieFile]pkg.Movie, destination string) error
 
 // moveTVEpisodes moves the media files to the destination directory path provided as argument.
 // It returns an error if the destination directory does not exist or if there was an error while moving the file.
-func moveTVEpisodes(mediaList map[pkg.TVShowFile]pkg.TVEpisode, destination string) error {
+func moveTVEpisodes(tvList *pkg.AtomicTVEpisodeList, destination string) error {
 	if !pkg.IsDirectoryExists(destination) {
 		return errors.New("destination directory does not exists")
 	}
-	for mediaFile, media := range mediaList {
+	for mediaFile, media := range tvList.GetAll() {
 		var source = path.Join(mediaFile.Path, mediaFile.Filename)
 		var destination = path.Join(
 			destination,
