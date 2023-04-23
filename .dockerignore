@@ -2,3 +2,5 @@
 bin/
 .env*
 log.txt
+.git
+*.log

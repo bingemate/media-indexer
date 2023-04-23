@@ -6,11 +6,11 @@ ENV GO111MODULE=on
 COPY . /app
 WORKDIR /app
 
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -x -ldflags "-s -w" -o main .
 
 # final stage
 FROM alpine:latest
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates ffmpeg
 
 WORKDIR /app/
 COPY --from=build /app/main .
