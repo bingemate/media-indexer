@@ -11,24 +11,24 @@ import (
 
 // AudioData is a struct that holds information about an audio stream
 type AudioData struct {
-	codec    string  // The codec used to encode the audio (e.g. AAC, MP3, etc)
-	language string  // The language of the audio stream (e.g. English, Spanish, etc)
-	bitrate  float64 // The bitrate of the audio stream in bits per second
+	Codec    string  // The codec used to encode the audio (e.g. AAC, MP3, etc)
+	Language string  // The language of the audio stream (e.g. English, Spanish, etc)
+	Bitrate  float64 // The bitrate of the audio stream in bits per second
 }
 
 // SubtitleData is a struct that holds information about a subtitle stream
 type SubtitleData struct {
-	language string // The language of the subtitle stream (e.g. English, Spanish, etc)
-	codec    string // The codec used to encode the subtitles (e.g. SRT, ASS, etc)
+	Language string // The language of the subtitle stream (e.g. English, Spanish, etc)
+	Codec    string // The codec used to encode the subtitles (e.g. SRT, ASS, etc)
 }
 
 // MediaData is a struct that holds information about a media file
 type MediaData struct {
-	size     float64        // The size of the media file in bytes
-	duration float64        // The duration of the media file in seconds
-	codec    string         // The codec used to encode the video (e.g. H.264, H.265, etc)
-	audio    []AudioData    // An array of AudioData structs representing the audio streams in the media file
-	subtitle []SubtitleData // An array of SubtitleData structs representing the subtitle streams in the media file
+	Size      float64        // The size of the media file in bytes
+	Duration  float64        // The duration of the media file in seconds
+	Codec     string         // The codec used to encode the video (e.g. H.264, H.265, etc)
+	Audios    []AudioData    // An array of AudioData structs representing the audio streams in the media file
+	Subtitles []SubtitleData // An array of SubtitleData structs representing the subtitle streams in the media file
 }
 
 // RetrieveMediaData retrieves media data from a file using ffprobe
@@ -76,16 +76,16 @@ func extractVideoStream(data *ffprobe.ProbeData, mediaData *MediaData) error {
 		log.Println("Error parsing size:", err)
 		return err
 	}
-	mediaData.size = size
+	mediaData.Size = size
 
 	// Set the duration of the media file
-	mediaData.duration = data.Format.DurationSeconds
+	mediaData.Duration = data.Format.DurationSeconds
 
 	// Extract the first video stream from the ffprobe data
 	videoStream := data.FirstVideoStream()
 
 	// Set the video codec for the media file
-	mediaData.codec = strings.ToUpper(videoStream.CodecName)
+	mediaData.Codec = strings.ToUpper(videoStream.CodecName)
 
 	// Return nil to indicate successful extraction
 	return nil
@@ -107,9 +107,9 @@ func extractSubtitleStream(data *ffprobe.ProbeData, mediaData *MediaData) {
 		}
 
 		// Add a new SubtitleData struct to the mediaData.subtitle array
-		mediaData.subtitle = append(mediaData.subtitle, SubtitleData{
-			language: language,
-			codec:    strings.ToUpper(subtitleStream.CodecName),
+		mediaData.Subtitles = append(mediaData.Subtitles, SubtitleData{
+			Language: language,
+			Codec:    strings.ToUpper(subtitleStream.CodecName),
 		})
 	}
 }
@@ -137,10 +137,10 @@ func extractAudioStream(data *ffprobe.ProbeData, mediaData *MediaData) error {
 		}
 
 		// Add a new AudioData struct to the mediaData.audio array
-		mediaData.audio = append(mediaData.audio, AudioData{
-			codec:    strings.ToUpper(audioStream.CodecName),
-			language: language,
-			bitrate:  bitrate,
+		mediaData.Audios = append(mediaData.Audios, AudioData{
+			Codec:    strings.ToUpper(audioStream.CodecName),
+			Language: language,
+			Bitrate:  bitrate,
 		})
 	}
 	return nil
