@@ -1,11 +1,12 @@
 package cmd
 
 import (
+	"github.com/bingemate/media-indexer/initializers"
 	"github.com/bingemate/media-indexer/internal/features"
+	"github.com/bingemate/media-indexer/internal/repository"
+	"github.com/bingemate/media-indexer/pkg"
 	"github.com/spf13/cobra"
 	"log"
-	"os"
-	"strings"
 )
 
 var rootCmd = &cobra.Command{
@@ -13,15 +14,20 @@ var rootCmd = &cobra.Command{
 	Short: "Media Indexer",
 	Long:  "Media Indexer",
 	Run: func(cmd *cobra.Command, args []string) {
-		source, _ := cmd.Flags().GetString("source")
-		destination, _ := cmd.Flags().GetString("destination")
-		tmdbApiKey, _ := cmd.Flags().GetString("tmdb-api-key")
-		if strings.TrimSpace(source) == "" || strings.TrimSpace(destination) == "" {
-			log.Println("Source and destination are required")
-			_ = cmd.Help()
-			os.Exit(1)
+		//source, _ := cmd.Flags().GetString("source")
+		//destination, _ := cmd.Flags().GetString("destination")
+		//tmdbApiKey, _ := cmd.Flags().GetString("tmdb-api-key")
+		//if strings.TrimSpace(source) == "" || strings.TrimSpace(destination) == "" {
+		//	log.Println("Source and destination are required")
+		//	_ = cmd.Help()
+		//	os.Exit(1)
+		//}
+		env, err := initializers.LoadEnv()
+		if err != nil {
+			log.Fatal(err)
 		}
-		main(source, destination, tmdbApiKey)
+
+		main(env)
 	},
 }
 
@@ -37,11 +43,17 @@ func init() {
 	rootCmd.Flags().StringP("tmdb-api-key", "t", "", "TMDB API Key")
 }
 
-func main(source, destination, tmdbApiKey string) {
-	log.Printf("Source: %s\n", source)
-	log.Printf("Destination: %s\n", destination)
-	var movieScanner = features.NewMovieScanner(source, destination, tmdbApiKey)
-	_, err := movieScanner.ScanMovies()
+func main(env initializers.Env) {
+	log.Printf("Source: %s\n", env.MovieSourceFolder)
+	log.Printf("Destination: %s\n", env.MovieTargetFolder)
+	var mediaClient = pkg.NewMediaClient(env.TMDBApiKey)
+	db, err := initializers.ConnectToDB(env)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var mediaRepository = repository.NewMediaRepository(db)
+	var movieScanner = features.NewMovieScanner(env.MovieSourceFolder, env.MovieTargetFolder, mediaClient, mediaRepository)
+	_, err = movieScanner.ScanMovies()
 	if err != nil {
 		log.Fatal(err)
 	}

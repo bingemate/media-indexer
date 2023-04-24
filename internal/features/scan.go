@@ -3,6 +3,7 @@ package features
 import (
 	"errors"
 	"fmt"
+	"github.com/bingemate/media-indexer/internal/repository"
 	"github.com/bingemate/media-indexer/pkg"
 	"log"
 	"path"
@@ -12,9 +13,10 @@ import (
 
 // MovieScanner represents a struct that scans movie folders to search for movie files and move them.
 type MovieScanner struct {
-	source      string          // Source directory path to scan for movies.
-	destination string          // Destination directory path to move the found movies.
-	mediaClient pkg.MediaClient // Media client object to search for movies on TMDB.
+	source          string                      // Source directory path to scan for movies.
+	destination     string                      // Destination directory path to move the found movies.
+	mediaClient     pkg.MediaClient             // Media client object to search for movies on TMDB.
+	mediaRepository *repository.MediaRepository // Media repository object to save the media files and their details.
 }
 
 // MovieScannerResult represents a struct that holds the results of scanning and moving movie files.
@@ -26,9 +28,10 @@ type MovieScannerResult struct {
 
 // TVScanner represents a struct that scans TV show folders to search for TV show files and move them.
 type TVScanner struct {
-	source      string          // Source directory path to scan for TV shows.
-	destination string          // Destination directory path to move the found TV shows.
-	mediaClient pkg.MediaClient // Media client object to search for TV shows on TMDB.
+	source          string                      // Source directory path to scan for TV shows.
+	destination     string                      // Destination directory path to move the found TV shows.
+	mediaClient     pkg.MediaClient             // Media client object to search for TV shows on TMDB.
+	mediaRepository *repository.MediaRepository // Media repository object to save the media files and their details.
 }
 
 // TVScannerResult represents a struct that holds the results of scanning and moving TV show files.
@@ -39,20 +42,22 @@ type TVScannerResult struct {
 }
 
 // NewMovieScanner returns a new instance of MovieScanner with given source directory, target directory, and TMDB API key.
-func NewMovieScanner(source, destination, tmdbAPIKey string) *MovieScanner {
+func NewMovieScanner(source, destination string, mediaClient pkg.MediaClient, mediaRepository *repository.MediaRepository) *MovieScanner {
 	return &MovieScanner{
-		source:      source,
-		destination: destination,
-		mediaClient: pkg.NewMediaClient(tmdbAPIKey),
+		source:          source,
+		destination:     destination,
+		mediaClient:     mediaClient,
+		mediaRepository: mediaRepository,
 	}
 }
 
 // NewTVScanner returns a new instance of TVScanner with given source directory, target directory, and TMDB API key.
-func NewTVScanner(source, destination, tmdbAPIKey string) *TVScanner {
+func NewTVScanner(source, destination string, mediaClient pkg.MediaClient, mediaRepository *repository.MediaRepository) *TVScanner {
 	return &TVScanner{
-		source:      source,
-		destination: destination,
-		mediaClient: pkg.NewMediaClient(tmdbAPIKey),
+		source:          source,
+		destination:     destination,
+		mediaClient:     mediaClient,
+		mediaRepository: mediaRepository,
 	}
 }
 
@@ -71,7 +76,7 @@ func (s *MovieScanner) ScanMovies() (*[]MovieScannerResult, error) {
 	log.Printf("Moving %d movies to %s...", len(*result), s.destination)
 
 	// Moves the movies to the destination directory and returns an error if it fails
-	err = moveMovies(atomicMovieList, s.destination)
+	err = s.moveMovies(atomicMovieList, s.destination)
 	if err != nil {
 		log.Printf("Failed to move movies to %s: %v", s.destination, err)
 		return nil, err
@@ -164,7 +169,7 @@ func (s *TVScanner) ScanTV() (*[]TVScannerResult, error) {
 	log.Printf("Moving %d TV shows to %s...", len(*result), s.destination)
 
 	// Moves the TV shows to the destination directory and returns an error if it fails
-	err = moveTVEpisodes(atomicMediaList, s.destination)
+	err = s.moveTVEpisodes(atomicMediaList, s.destination)
 	if err != nil {
 		log.Printf("Failed to move TV shows to %s: %v", s.destination, err)
 		return nil, err
@@ -268,7 +273,7 @@ func searchTVEpisode(mediaFile *pkg.TVShowFile, client pkg.MediaClient) (pkg.TVE
 
 // moveMovies moves the media files to the destination directory path provided as argument.
 // It returns an error if the destination directory does not exist or if there was an error while moving the file.
-func moveMovies(movieList *pkg.AtomicMovieList, destination string) error {
+func (s *MovieScanner) moveMovies(movieList *pkg.AtomicMovieList, destination string) error {
 	if !pkg.IsDirectoryExists(destination) {
 		return errors.New("destination directory does not exists")
 	}
@@ -282,6 +287,10 @@ func moveMovies(movieList *pkg.AtomicMovieList, destination string) error {
 		if err != nil {
 			return err
 		}
+		err = s.mediaRepository.IndexMovie(&media, destination)
+		if err != nil {
+			return err
+		}
 		log.Printf("Processed %-60s - %s %s", mediaFile.Filename, media.Name, media.Year())
 	}
 	return nil
@@ -289,7 +298,7 @@ func moveMovies(movieList *pkg.AtomicMovieList, destination string) error {
 
 // moveTVEpisodes moves the media files to the destination directory path provided as argument.
 // It returns an error if the destination directory does not exist or if there was an error while moving the file.
-func moveTVEpisodes(tvList *pkg.AtomicTVEpisodeList, destination string) error {
+func (s *TVScanner) moveTVEpisodes(tvList *pkg.AtomicTVEpisodeList, destination string) error {
 	if !pkg.IsDirectoryExists(destination) {
 		return errors.New("destination directory does not exists")
 	}

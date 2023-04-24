@@ -19,11 +19,8 @@ func main() {
 	}
 	logFile := initializers.InitLog(env.LogFile)
 	defer logFile.Close()
-	db, err := initializers.ConnectToDB(env)
-	if err != nil {
-		log.Fatal(err)
-	}
-	test(db)
+
+	//test(db)
 	if *server {
 		log.Println("Starting server mode...")
 		cmd.Serve(env)
@@ -36,18 +33,18 @@ func main() {
 func test(db *gorm.DB) {
 	var mediaFile = repository.MediaFile{
 		Filename: "test.mkv",
-		Codec:    repository.H264,
+		Codec:    repository.VideoCodecH264,
 		Size:     1266565656.58,
 		Duration: 4600.58,
 		Subtitles: []repository.Subtitle{
 			{
-				Codec:    repository.SRT,
+				Codec:    repository.SubtitleCodecSRT,
 				Language: "français",
 			},
 		},
 	}
 
-	/*	var subtitle = repository.Subtitle{
+	/*	var subtitle = repository.Subtitles{
 		Codec:    repository.SRT,
 		Language: "français",
 	}*/
