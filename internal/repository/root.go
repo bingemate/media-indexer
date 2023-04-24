@@ -150,6 +150,7 @@ func (r *MediaRepository) IndexMovie(movie *pkg.Movie, fileDestination string) e
 		Categories: func() []Category {
 			var categories []Category
 			for _, c := range movie.Categories {
+				// TODO: check if category already exists
 				categories = append(categories, Category{
 					Name: c.Name,
 				})
