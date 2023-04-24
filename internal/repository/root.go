@@ -1,40 +1,45 @@
 package repository
 
 import (
+	"errors"
+	"github.com/bingemate/media-indexer/pkg"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"log"
 	"time"
 )
 
-type MediaType string
-type VideoCodec string
-type AudioCodec string
-type SubtitleCodec string
+type (
+	MediaType     string
+	VideoCodec    string
+	AudioCodec    string
+	SubtitleCodec string
+)
 
 const (
-	Movie   MediaType = "Movie"
-	TvShow  MediaType = "TvShow"
-	Episode MediaType = "Episode"
+	MediaTypeMovie   MediaType = "Movie"
+	MediaTypeTvShow  MediaType = "TvShow"
+	MediaTypeEpisode MediaType = "Episode"
 
-	H264 VideoCodec = "H264"
-	H265 VideoCodec = "H265"
+	VideoCodecH264 VideoCodec = "H264"
+	VideoCodecH265 VideoCodec = "H265"
 
-	AAC    AudioCodec = "AAC"
-	AC3    AudioCodec = "AC3"
-	MP3    AudioCodec = "MP3"
-	DTS    AudioCodec = "DTS"
-	Vorbis AudioCodec = "Vorbis"
+	AudioCodecAAC    AudioCodec = "AAC"
+	AudioCodecAC3    AudioCodec = "AC3"
+	AudioCodecMP3    AudioCodec = "MP3"
+	AudioCodecDTS    AudioCodec = "DTS"
+	AudioCodecVorbis AudioCodec = "Vorbis"
 
-	SRT    SubtitleCodec = "SRT"
-	SUBRIP SubtitleCodec = "SUBRIP"
-	ASS    SubtitleCodec = "ASS"
+	SubtitleCodecSRT    SubtitleCodec = "SRT"
+	SubtitleCodecSUBRIP SubtitleCodec = "SUBRIP"
+	SubtitleCodecASS    SubtitleCodec = "ASS"
 )
 
 type Model struct {
 	ID        uuid.UUID `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
+	//DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 type MediaFile struct {
@@ -47,43 +52,43 @@ type MediaFile struct {
 	Subtitles []Subtitle `gorm:"foreignKey:MediaFileID;constraint:OnDelete:CASCADE;"`
 }
 
-type Medias struct {
+type Media struct {
 	Model
-	MediaType   MediaType `gorm:"index"`
-	TmdbID      int
-	ReleaseDate time.Time    `gorm:"type:date"`
-	TvShows     []TvShows    `gorm:"foreignKey:MediaID;constraint:OnDelete:CASCADE;"`
-	Movies      []Movies     `gorm:"foreignKey:MediaID;constraint:OnDelete:CASCADE;"`
-	Episodes    []Episodes   `gorm:"foreignKey:MediaID;constraint:OnDelete:CASCADE;"`
-	Categories  []Categories `gorm:"many2many:category_media"`
+	MediaType   MediaType  `gorm:"index"`
+	TmdbID      int        `gorm:"uniqueIndex"`
+	ReleaseDate time.Time  `gorm:"type:date"`
+	TvShows     []TvShow   `gorm:"foreignKey:MediaID;constraint:OnDelete:CASCADE;"`
+	Movies      []Movie    `gorm:"foreignKey:MediaID;constraint:OnDelete:CASCADE;"`
+	Episodes    []Episode  `gorm:"foreignKey:MediaID;constraint:OnDelete:CASCADE;"`
+	Categories  []Category `gorm:"many2many:category_media;constraint:OnDelete:CASCADE;"`
 }
 
-type TvShows struct {
+type TvShow struct {
 	Model
 	Name     string
-	MediaID  string     `gorm:"type:uuid;not null"`
-	Media    Medias     `gorm:"reference:MediaID"`
-	Episodes []Episodes `gorm:"foreignKey:TvShowID;constraint:OnDelete:CASCADE;"`
+	MediaID  string    `gorm:"type:uuid;not null"`
+	Media    Media     `gorm:"reference:MediaID"`
+	Episodes []Episode `gorm:"foreignKey:TvShowID;constraint:OnDelete:CASCADE;"`
 }
 
-type Episodes struct {
+type Episode struct {
 	Model
 	Name        string
 	NbEpisode   int
 	NbSeason    int
 	MediaID     string    `gorm:"type:uuid;not null"`
-	Media       Medias    `gorm:"reference:MediaID"`
+	Media       Media     `gorm:"reference:MediaID"`
 	TvShowID    string    `gorm:"type:uuid;not null"`
-	TvShow      TvShows   `gorm:"reference:TvShowID"`
+	TvShow      TvShow    `gorm:"reference:TvShowID"`
 	MediaFileID string    `gorm:"type:uuid;not null"`
 	MediaFile   MediaFile `gorm:"reference:MediaFileID"`
 }
 
-type Movies struct {
+type Movie struct {
 	Model
 	Name        string
 	MediaID     string    `gorm:"type:uuid;not null"`
-	Media       Medias    `gorm:"reference:MediaID"`
+	Media       Media     `gorm:"reference:MediaID"`
 	MediaFileID string    `gorm:"type:uuid;not null"`
 	MediaFile   MediaFile `gorm:"reference:MediaFileID"`
 }
@@ -105,17 +110,17 @@ type Subtitle struct {
 	MediaFile   MediaFile `gorm:"reference:MediaFileID"`
 }
 
-type Categories struct {
+type Category struct {
 	Model
-	Name   string
-	Medias []Medias `gorm:"many2many:category_media"`
+	Name   string  `gorm:"uniqueIndex"`
+	Medias []Media `gorm:"many2many:category_media"`
 }
 
 type CategoryMedia struct {
-	MediaID    string     `gorm:"type:uuid;primaryKey"`
-	Media      Medias     `gorm:"reference:MediaID"`
-	CategoryID string     `gorm:"type:uuid;primaryKey"`
-	Category   Categories `gorm:"reference:CategoryID"`
+	MediaID    string   `gorm:"type:uuid;primaryKey"`
+	Media      Media    `gorm:"reference:MediaID;constraint:OnDelete:CASCADE;"`
+	CategoryID string   `gorm:"type:uuid;primaryKey"`
+	Category   Category `gorm:"reference:CategoryID;constraint:OnDelete:CASCADE;"`
 }
 
 type MediaRepository struct {
@@ -123,5 +128,8 @@ type MediaRepository struct {
 }
 
 func NewMediaRepository(db *gorm.DB) *MediaRepository {
+	if db == nil {
+		log.Fatal("db is nil")
+	}
 	return &MediaRepository{db: db}
 }

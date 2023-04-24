@@ -3,11 +3,16 @@ package controllers
 import (
 	"github.com/bingemate/media-indexer/initializers"
 	"github.com/bingemate/media-indexer/internal/features"
+	"github.com/bingemate/media-indexer/internal/repository"
+	"github.com/bingemate/media-indexer/pkg"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func InitRouter(engine *gin.Engine, env initializers.Env) {
-	var movieScanner = features.NewMovieScanner(env.MovieSourceFolder, env.MovieTargetFolder, env.TMDBApiKey)
-	var tvScanner = features.NewTVScanner(env.TvSourceFolder, env.TvTargetFolder, env.TMDBApiKey)
+func InitRouter(engine *gin.Engine, db *gorm.DB, env initializers.Env) {
+	var mediaClient = pkg.NewMediaClient(env.TMDBApiKey)
+	var mediaRepository = repository.NewMediaRepository(db)
+	var movieScanner = features.NewMovieScanner(env.MovieSourceFolder, env.MovieTargetFolder, mediaClient, mediaRepository)
+	var tvScanner = features.NewTVScanner(env.TvSourceFolder, env.TvTargetFolder, mediaClient, mediaRepository)
 	InitScanController(engine.Group("/scan"), movieScanner, tvScanner)
 }

@@ -23,13 +23,13 @@ func ConnectToDB(env Env) (*gorm.DB, error) {
 		db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
 		err = db.AutoMigrate(
 			&repository.MediaFile{},
-			&repository.Medias{},
-			&repository.TvShows{},
-			&repository.Episodes{},
-			&repository.Movies{},
+			&repository.Media{},
+			&repository.TvShow{},
+			&repository.Episode{},
+			&repository.Movie{},
 			&repository.Audio{},
 			&repository.Subtitle{},
-			repository.Categories{},
+			repository.Category{},
 			repository.CategoryMedia{},
 		)
 		if err != nil {
