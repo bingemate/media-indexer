@@ -133,3 +133,99 @@ func NewMediaRepository(db *gorm.DB) *MediaRepository {
 	}
 	return &MediaRepository{db: db}
 }
+
+func (r *MediaRepository) IndexMovie(movie *pkg.Movie, fileDestination string) error {
+	releaseDate, err := time.Parse("2006-01-02", movie.ReleaseDate)
+	if err != nil {
+		return err
+	}
+	mediadata, err := pkg.RetrieveMediaData(fileDestination)
+	if err != nil {
+		return err
+	}
+	media := Media{
+		MediaType:   MediaTypeMovie,
+		TmdbID:      movie.ID,
+		ReleaseDate: releaseDate,
+		Categories: func() []Category {
+			var categories []Category
+			for _, c := range movie.Categories {
+				categories = append(categories, Category{
+					Name: c.Name,
+				})
+			}
+			return categories
+		}(),
+		Movies: []Movie{
+			{
+				Name: movie.Name,
+				MediaFile: MediaFile{
+					Filename: fileDestination,
+					Size:     mediadata.Size,
+					Duration: mediadata.Duration,
+					Codec:    VideoCodec(mediadata.Codec),
+					Audio: func() []Audio {
+						var audio = make([]Audio, 0)
+						for _, a := range mediadata.Audios {
+							audio = append(audio, Audio{
+								Codec:    AudioCodec(a.Codec),
+								Language: a.Language,
+								Bitrate:  a.Bitrate,
+							})
+						}
+						return audio
+					}(),
+					Subtitles: func() []Subtitle {
+						var subtitles = make([]Subtitle, 0)
+						for _, s := range mediadata.Subtitles {
+							subtitles = append(subtitles, Subtitle{
+								Codec:    SubtitleCodec(s.Codec),
+								Language: s.Language,
+							})
+						}
+						return subtitles
+					}(),
+				},
+			},
+		},
+	}
+	err = r.clearDuplicatedMovie(movie.ID)
+	if err != nil {
+		return err
+	}
+	db := r.db.Create(&media)
+	if db.Error != nil {
+		return db.Error
+	}
+	return nil
+}
+
+func (r *MediaRepository) clearDuplicatedMovie(tmdbID int) error {
+	var movie Movie
+	db := r.db.Joins("Media").Joins("MediaFile").Where("tmdb_id = ?", tmdbID).First(&movie)
+	if db.Error != nil && !errors.Is(db.Error, gorm.ErrRecordNotFound) {
+		return db.Error
+	}
+	if movie.ID == uuid.Nil {
+		return nil
+	}
+	err := r.removeMovie(movie.MediaID, movie.MediaFileID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *MediaRepository) removeMovie(mediaID, fileID string) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		tx = tx.Delete(&Media{}, mediaID)
+		if tx.Error != nil {
+			return tx.Error
+		}
+		tx = tx.Delete(&MediaFile{}, fileID)
+		if tx.Error != nil {
+			return tx.Error
+		}
+		return nil
+	})
+}
