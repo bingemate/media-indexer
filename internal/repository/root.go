@@ -209,6 +209,8 @@ func (r *MediaRepository) clearDuplicatedMovie(tmdbID int) error {
 	if movie.ID == uuid.Nil {
 		return nil
 	}
+	//TODO Si nom du fichier différent, on supprime l'ancien
+
 	err := r.removeMovie(movie.MediaID, movie.MediaFileID)
 	if err != nil {
 		return err
