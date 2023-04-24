@@ -279,15 +279,16 @@ func (s *MovieScanner) moveMovies(movieList *pkg.AtomicMovieList, destination st
 	}
 	for mediaFile, media := range movieList.GetAll() {
 		var source = path.Join(mediaFile.Path, mediaFile.Filename)
+		var movieFilename = buildMovieFilename(media, mediaFile.Extension)
 		var destination = path.Join(
 			destination,
-			buildMovieFilename(media, mediaFile.Extension),
+			movieFilename,
 		)
 		err := pkg.MoveFile(source, destination)
 		if err != nil {
 			return err
 		}
-		err = s.mediaRepository.IndexMovie(&media, destination)
+		err = s.mediaRepository.IndexMovie(&media, s.destination, movieFilename)
 		if err != nil {
 			return err
 		}

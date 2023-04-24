@@ -6,6 +6,8 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"log"
+	"os"
+	"path"
 	"time"
 )
 
@@ -134,12 +136,13 @@ func NewMediaRepository(db *gorm.DB) *MediaRepository {
 	return &MediaRepository{db: db}
 }
 
-func (r *MediaRepository) IndexMovie(movie *pkg.Movie, fileDestination string) error {
+func (r *MediaRepository) IndexMovie(movie *pkg.Movie, destination, fileDestination string) error {
+	log.Printf("Indexing movie %s", movie.Name)
 	releaseDate, err := time.Parse("2006-01-02", movie.ReleaseDate)
 	if err != nil {
 		return err
 	}
-	mediadata, err := pkg.RetrieveMediaData(fileDestination)
+	mediaData, err := pkg.RetrieveMediaData(fileDestination)
 	if err != nil {
 		return err
 	}
@@ -150,10 +153,14 @@ func (r *MediaRepository) IndexMovie(movie *pkg.Movie, fileDestination string) e
 		Categories: func() []Category {
 			var categories []Category
 			for _, c := range movie.Categories {
-				// TODO: check if category already exists
-				categories = append(categories, Category{
-					Name: c.Name,
-				})
+				alreadyInDB, err := r.getCategory(c.Name)
+				if err != nil {
+					categories = append(categories, Category{
+						Name: c.Name,
+					})
+				} else {
+					categories = append(categories, *alreadyInDB)
+				}
 			}
 			return categories
 		}(),
@@ -162,12 +169,12 @@ func (r *MediaRepository) IndexMovie(movie *pkg.Movie, fileDestination string) e
 				Name: movie.Name,
 				MediaFile: MediaFile{
 					Filename: fileDestination,
-					Size:     mediadata.Size,
-					Duration: mediadata.Duration,
-					Codec:    VideoCodec(mediadata.Codec),
+					Size:     mediaData.Size,
+					Duration: mediaData.Duration,
+					Codec:    VideoCodec(mediaData.Codec),
 					Audio: func() []Audio {
 						var audio = make([]Audio, 0)
-						for _, a := range mediadata.Audios {
+						for _, a := range mediaData.Audios {
 							audio = append(audio, Audio{
 								Codec:    AudioCodec(a.Codec),
 								Language: a.Language,
@@ -178,7 +185,7 @@ func (r *MediaRepository) IndexMovie(movie *pkg.Movie, fileDestination string) e
 					}(),
 					Subtitles: func() []Subtitle {
 						var subtitles = make([]Subtitle, 0)
-						for _, s := range mediadata.Subtitles {
+						for _, s := range mediaData.Subtitles {
 							subtitles = append(subtitles, Subtitle{
 								Codec:    SubtitleCodec(s.Codec),
 								Language: s.Language,
@@ -190,7 +197,7 @@ func (r *MediaRepository) IndexMovie(movie *pkg.Movie, fileDestination string) e
 			},
 		},
 	}
-	err = r.clearDuplicatedMovie(movie.ID)
+	err = r.clearDuplicatedMovie(movie.ID, destination, fileDestination)
 	if err != nil {
 		return err
 	}
@@ -201,7 +208,7 @@ func (r *MediaRepository) IndexMovie(movie *pkg.Movie, fileDestination string) e
 	return nil
 }
 
-func (r *MediaRepository) clearDuplicatedMovie(tmdbID int) error {
+func (r *MediaRepository) clearDuplicatedMovie(tmdbID int, destination, fileDestination string) error {
 	var movie Movie
 	db := r.db.Joins("Media").Joins("MediaFile").Where("tmdb_id = ?", tmdbID).First(&movie)
 	if db.Error != nil && !errors.Is(db.Error, gorm.ErrRecordNotFound) {
@@ -210,10 +217,16 @@ func (r *MediaRepository) clearDuplicatedMovie(tmdbID int) error {
 	if movie.ID == uuid.Nil {
 		return nil
 	}
-	//TODO Si nom du fichier différent, on supprime l'ancien
-
+	log.Printf("Removing duplicated movie %s", movie.Name)
 	err := r.removeMovie(movie.MediaID, movie.MediaFileID)
 	if err != nil {
+		if movie.MediaFile.Filename != fileDestination {
+			log.Printf("Removing duplicated file %s", movie.MediaFile.Filename)
+			err := os.Remove(path.Join(destination, movie.MediaFile.Filename))
+			if err != nil {
+				return err
+			}
+		}
 		return err
 	}
 	return nil
@@ -231,4 +244,13 @@ func (r *MediaRepository) removeMovie(mediaID, fileID string) error {
 		}
 		return nil
 	})
+}
+
+func (r *MediaRepository) getCategory(name string) (*Category, error) {
+	var category Category
+	db := r.db.Where("name = ?", name).First(&category)
+	if db.Error != nil {
+		return nil, db.Error
+	}
+	return &category, nil
 }
