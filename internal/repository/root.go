@@ -3,7 +3,6 @@ package repository
 import (
 	"errors"
 	"github.com/bingemate/media-indexer/pkg"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"log"
 	"os"
@@ -25,9 +24,11 @@ const (
 
 	VideoCodecH264 VideoCodec = "H264"
 	VideoCodecH265 VideoCodec = "H265"
+	VideoCodecHEVC VideoCodec = "HEVC"
 
 	AudioCodecAAC    AudioCodec = "AAC"
 	AudioCodecAC3    AudioCodec = "AC3"
+	AudioCodecEAC3   AudioCodec = "EAC3"
 	AudioCodecMP3    AudioCodec = "MP3"
 	AudioCodecDTS    AudioCodec = "DTS"
 	AudioCodecVorbis AudioCodec = "Vorbis"
@@ -38,7 +39,7 @@ const (
 )
 
 type Model struct {
-	ID        uuid.UUID `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
+	ID        string `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	//DeletedAt gorm.DeletedAt `gorm:"index"`
@@ -83,7 +84,7 @@ type Episode struct {
 	TvShowID    string    `gorm:"type:uuid;not null"`
 	TvShow      TvShow    `gorm:"reference:TvShowID"`
 	MediaFileID string    `gorm:"type:uuid;not null"`
-	MediaFile   MediaFile `gorm:"reference:MediaFileID"`
+	MediaFile   MediaFile `gorm:"reference:MediaFileID;constraint:OnDelete:CASCADE;"`
 }
 
 type Movie struct {
@@ -92,7 +93,7 @@ type Movie struct {
 	MediaID     string    `gorm:"type:uuid;not null"`
 	Media       Media     `gorm:"reference:MediaID"`
 	MediaFileID string    `gorm:"type:uuid;not null"`
-	MediaFile   MediaFile `gorm:"reference:MediaFileID"`
+	MediaFile   MediaFile `gorm:"reference:MediaFileID;constraint:OnDelete:CASCADE;"`
 }
 
 type Audio struct {
@@ -136,7 +137,7 @@ func NewMediaRepository(db *gorm.DB) *MediaRepository {
 	return &MediaRepository{db: db}
 }
 
-func (r *MediaRepository) IndexMovie(movie *pkg.Movie, destination, fileDestination string) error {
+func (r *MediaRepository) IndexMovie(movie pkg.Movie, destination, fileDestination string) error {
 	log.Printf("Indexing movie %s", movie.Name)
 	releaseDate, err := time.Parse("2006-01-02", movie.ReleaseDate)
 	if err != nil {
@@ -176,13 +177,13 @@ func (r *MediaRepository) IndexMovie(movie *pkg.Movie, destination, fileDestinat
 	return nil
 }
 
-func (r *MediaRepository) IndexTvShow(tvShow *pkg.TVEpisode, destination, fileDestination string) error {
+func (r *MediaRepository) IndexTvEpisode(tvShow pkg.TVEpisode, destination, fileDestination string) error {
 	log.Printf("Indexing tv show %s", tvShow.Name)
 	releaseDate, err := time.Parse("2006-01-02", tvShow.TvReleaseDate)
 	if err != nil {
 		return err
 	}
-	epidodeReleaseDate, err := time.Parse("2006-01-02", tvShow.ReleaseDate)
+	episodeReleaseDate, err := time.Parse("2006-01-02", tvShow.ReleaseDate)
 	if err != nil {
 		return err
 	}
@@ -190,23 +191,18 @@ func (r *MediaRepository) IndexTvShow(tvShow *pkg.TVEpisode, destination, fileDe
 	if err != nil {
 		return err
 	}
+	tvShowEntity, err := r.handleTvShow(tvShow.Name, tvShow.TvShowID, releaseDate, &tvShow.Categories)
+	if err != nil {
+		return err
+	}
 
 	media := Media{
 		MediaType:   MediaTypeEpisode,
 		TmdbID:      tvShow.ID,
-		ReleaseDate: epidodeReleaseDate,
+		ReleaseDate: episodeReleaseDate,
 		Episodes: []Episode{
 			{
-				TvShow: TvShow{
-					// TODO check if tv show already exists
-					Media: Media{
-						MediaType:   MediaTypeTvShow,
-						TmdbID:      tvShow.TvShowID,
-						ReleaseDate: releaseDate,
-						Categories:  *r.extractCategories(&tvShow.Categories),
-					},
-					Name: tvShow.Name,
-				},
+				TvShow:    *tvShowEntity,
 				Name:      tvShow.Name,
 				NbEpisode: tvShow.Episode,
 				NbSeason:  tvShow.Season,
@@ -221,7 +217,14 @@ func (r *MediaRepository) IndexTvShow(tvShow *pkg.TVEpisode, destination, fileDe
 			},
 		},
 	}
-	// TODO complete
+	err = r.clearDuplicatedEpisode(tvShow.ID, destination, fileDestination)
+	if err != nil {
+		return err
+	}
+	db := r.db.Create(&media)
+	if db.Error != nil {
+		return db.Error
+	}
 	return nil
 }
 
@@ -269,7 +272,7 @@ func (r *MediaRepository) clearDuplicatedMovie(tmdbID int, destination, fileDest
 	if db.Error != nil && !errors.Is(db.Error, gorm.ErrRecordNotFound) {
 		return db.Error
 	}
-	if movie.ID == uuid.Nil {
+	if movie.ID == "" {
 		return nil
 	}
 	log.Printf("Removing duplicated movie %s", movie.Name)
@@ -287,15 +290,53 @@ func (r *MediaRepository) clearDuplicatedMovie(tmdbID int, destination, fileDest
 	return nil
 }
 
+func (r *MediaRepository) clearDuplicatedEpisode(tmdbID int, destination, fileDestination string) error {
+	var tvEpisode Episode
+	db := r.db.Joins("Media").Joins("MediaFile").Where("tmdb_id = ?", tmdbID).First(&tvEpisode)
+	if db.Error != nil && !errors.Is(db.Error, gorm.ErrRecordNotFound) {
+		return db.Error
+	}
+	if tvEpisode.ID == "" {
+		return nil
+	}
+	log.Printf("Removing duplicated tv episode %s %dx%d", tvEpisode.Name, tvEpisode.NbSeason, tvEpisode.NbEpisode)
+	err := r.removeEpisode(tvEpisode.MediaID, tvEpisode.MediaFileID)
+	if err != nil {
+		if tvEpisode.MediaFile.Filename != fileDestination {
+			log.Printf("Removing duplicated file %s", tvEpisode.MediaFile.Filename)
+			err := os.Remove(path.Join(destination, tvEpisode.MediaFile.Filename))
+			if err != nil {
+				return err
+			}
+		}
+		return err
+	}
+	return nil
+}
+
 func (r *MediaRepository) removeMovie(mediaID, fileID string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		tx = tx.Delete(&Media{}, mediaID)
-		if tx.Error != nil {
-			return tx.Error
+		err := tx.Delete(&Media{}, "id = ?", mediaID).Error
+		if err != nil {
+			return err
 		}
-		tx = tx.Delete(&MediaFile{}, fileID)
-		if tx.Error != nil {
-			return tx.Error
+		err = tx.Delete(&MediaFile{}, "id = ?", fileID).Error
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+func (r *MediaRepository) removeEpisode(mediaID, fileID string) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		err := tx.Delete(&Media{}, "id = ?", mediaID).Error
+		if err != nil {
+			return err
+		}
+		err = tx.Delete(&MediaFile{}, "id = ?", fileID).Error
+		if err != nil {
+			return err
 		}
 		return nil
 	})
@@ -308,4 +349,25 @@ func (r *MediaRepository) getCategory(name string) (*Category, error) {
 		return nil, db.Error
 	}
 	return &category, nil
+}
+
+func (r *MediaRepository) handleTvShow(name string, tmdbID int, releaseDate time.Time, categories *[]pkg.Category) (*TvShow, error) {
+	var alreadyInDB TvShow
+	db := r.db.Joins("Media").Where("tmdb_id = ?", tmdbID).First(&alreadyInDB)
+	if db.Error != nil && !errors.Is(db.Error, gorm.ErrRecordNotFound) {
+		log.Println(db.Error)
+		return nil, db.Error
+	}
+	if alreadyInDB.ID != "" {
+		return &alreadyInDB, nil
+	}
+	return &TvShow{
+		Media: Media{
+			MediaType:   MediaTypeTvShow,
+			TmdbID:      tmdbID,
+			ReleaseDate: releaseDate,
+			Categories:  *r.extractCategories(categories),
+		},
+		Name: name,
+	}, nil
 }
