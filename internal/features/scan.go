@@ -288,7 +288,7 @@ func (s *MovieScanner) moveMovies(movieList *pkg.AtomicMovieList, destination st
 		if err != nil {
 			return err
 		}
-		err = s.mediaRepository.IndexMovie(&media, s.destination, movieFilename)
+		err = s.mediaRepository.IndexMovie(media, s.destination, movieFilename)
 		if err != nil {
 			return err
 		}
@@ -305,12 +305,20 @@ func (s *TVScanner) moveTVEpisodes(tvList *pkg.AtomicTVEpisodeList, destination 
 	}
 	for mediaFile, media := range tvList.GetAll() {
 		var source = path.Join(mediaFile.Path, mediaFile.Filename)
+		var episodeFilename = buildTVEpisodeFilename(media, mediaFile.Extension)
 		var destination = path.Join(
 			destination,
 			media.Name,
-			buildTVEpisodeFilename(media, mediaFile.Extension),
+			episodeFilename,
 		)
 		err := pkg.MoveFile(source, destination)
+		if err != nil {
+			return err
+		}
+		err = s.mediaRepository.IndexTvEpisode(
+			media, path.Join(s.destination, media.Name),
+			episodeFilename,
+		)
 		if err != nil {
 			return err
 		}
