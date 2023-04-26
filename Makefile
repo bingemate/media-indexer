@@ -17,3 +17,15 @@ build-windows:
 build-docker:
 	@echo "Building Docker image..."
 	@docker build -t $(NAME) .
+
+db-compose-up:
+	@echo "==> Running docker-compose up"
+	@docker compose -f docker-compose.db.yml up -d
+
+db-compose-down:
+	@echo "==> Running docker-compose down"
+	@docker compose -f docker-compose.db.yml down --remove-orphans
+
+db-compose-down-remove-volumes:
+	@echo "==> Running docker-compose down --volumes"
+	@docker compose -f docker-compose.db.yml down --remove-orphans --volumes
