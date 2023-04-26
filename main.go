@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	var server = flag.Bool("serve", false, "Run server")
+	var server = flag.Bool("serve", true, "Run server")
 	flag.Parse()
 	env, err := initializers.LoadEnv()
 	if err != nil {

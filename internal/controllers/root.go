@@ -10,9 +10,12 @@ import (
 )
 
 func InitRouter(engine *gin.Engine, db *gorm.DB, env initializers.Env) {
+	engine.MaxMultipartMemory = 32 << 20 // 32 MiB per file upload fragment
 	var mediaClient = pkg.NewMediaClient(env.TMDBApiKey)
 	var mediaRepository = repository.NewMediaRepository(db)
 	var movieScanner = features.NewMovieScanner(env.MovieSourceFolder, env.MovieTargetFolder, mediaClient, mediaRepository)
 	var tvScanner = features.NewTVScanner(env.TvSourceFolder, env.TvTargetFolder, mediaClient, mediaRepository)
+	var mediaUploader = features.NewMediaUploader(env.TvSourceFolder, env.MovieSourceFolder)
 	InitScanController(engine.Group("/scan"), movieScanner, tvScanner)
+	InitUploadController(engine.Group("/upload"), mediaUploader)
 }
