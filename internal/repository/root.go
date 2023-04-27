@@ -51,6 +51,7 @@ type MediaFile struct {
 	Size      float64
 	Duration  float64
 	Codec     VideoCodec
+	Mimetype  string
 	Audio     []Audio    `gorm:"foreignKey:MediaFileID;constraint:OnDelete:CASCADE;"`
 	Subtitles []Subtitle `gorm:"foreignKey:MediaFileID;constraint:OnDelete:CASCADE;"`
 }
@@ -154,15 +155,8 @@ func (r *MediaRepository) IndexMovie(movie pkg.Movie, destination, fileDestinati
 		Categories:  *r.extractCategories(&movie.Categories),
 		Movies: []Movie{
 			{
-				Name: movie.Name,
-				MediaFile: MediaFile{
-					Filename:  fileDestination,
-					Size:      mediaData.Size,
-					Duration:  mediaData.Duration,
-					Codec:     VideoCodec(mediaData.Codec),
-					Audio:     *r.extractAudio(&mediaData.Audios),
-					Subtitles: *r.extractSubtitles(&mediaData.Subtitles),
-				},
+				Name:      movie.Name,
+				MediaFile: r.extractMediaFile(fileDestination, &mediaData),
 			},
 		},
 	}
@@ -206,14 +200,7 @@ func (r *MediaRepository) IndexTvEpisode(tvShow pkg.TVEpisode, destination, file
 				Name:      tvShow.Name,
 				NbEpisode: tvShow.Episode,
 				NbSeason:  tvShow.Season,
-				MediaFile: MediaFile{
-					Filename:  fileDestination,
-					Size:      mediaData.Size,
-					Duration:  mediaData.Duration,
-					Codec:     VideoCodec(mediaData.Codec),
-					Audio:     *r.extractAudio(&mediaData.Audios),
-					Subtitles: *r.extractSubtitles(&mediaData.Subtitles),
-				},
+				MediaFile: r.extractMediaFile(fileDestination, &mediaData),
 			},
 		},
 	}
@@ -226,6 +213,18 @@ func (r *MediaRepository) IndexTvEpisode(tvShow pkg.TVEpisode, destination, file
 		return db.Error
 	}
 	return nil
+}
+
+func (r *MediaRepository) extractMediaFile(fileDestination string, mediaData *pkg.MediaData) MediaFile {
+	return MediaFile{
+		Filename:  fileDestination,
+		Size:      mediaData.Size,
+		Duration:  mediaData.Duration,
+		Codec:     VideoCodec(mediaData.Codec),
+		Audio:     *r.extractAudio(&mediaData.Audios),
+		Subtitles: *r.extractSubtitles(&mediaData.Subtitles),
+		Mimetype:  mediaData.Mimetype,
+	}
 }
 
 func (r *MediaRepository) extractSubtitles(pkgSubtitles *[]pkg.SubtitleData) *[]Subtitle {

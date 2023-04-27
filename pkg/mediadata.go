@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"context"
+	mimetype2 "github.com/gabriel-vasile/mimetype"
 	"gopkg.in/vansante/go-ffprobe.v2"
 	"log"
 	"strconv"
@@ -27,6 +28,7 @@ type MediaData struct {
 	Size      float64        // The size of the media file in bytes
 	Duration  float64        // The duration of the media file in seconds
 	Codec     string         // The codec used to encode the video (e.g. H.264, H.265, etc)
+	Mimetype  string         // File MIME Type
 	Audios    []AudioData    // An array of AudioData structs representing the audio streams in the media file
 	Subtitles []SubtitleData // An array of SubtitleData structs representing the subtitle streams in the media file
 }
@@ -47,6 +49,12 @@ func RetrieveMediaData(filePath string) (MediaData, error) {
 	// Initialize a new MediaData struct
 	var mediaData MediaData
 
+	err = extractMimetype(filePath, &mediaData)
+	if err != nil {
+		log.Println("Error extracting mimetype:", err)
+		return MediaData{}, err
+	}
+
 	// Extract the video stream information from the ffprobe data
 	err = extractVideoStream(data, &mediaData)
 	if err != nil {
@@ -66,6 +74,15 @@ func RetrieveMediaData(filePath string) (MediaData, error) {
 
 	// Return the completed media data
 	return mediaData, nil
+}
+
+func extractMimetype(path string, m *MediaData) error {
+	mimetype, err := mimetype2.DetectFile(path)
+	if err != nil {
+		return err
+	}
+	m.Mimetype = mimetype.String()
+	return nil
 }
 
 // extractVideoStream extracts video stream information from the ffprobe data and populates the provided MediaData struct
