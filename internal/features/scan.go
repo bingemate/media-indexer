@@ -75,7 +75,10 @@ func (s *MovieScanner) ScanMovies() (*[]MovieScannerResult, error) {
 		return nil, errors.New("scanner is currently running")
 	}
 	s.isScanning = true
-	s.scanLock.Unlock()
+	defer func() {
+		s.isScanning = false
+		s.scanLock.Unlock()
+	}()
 
 	mediaFiles, err := s.scanMovieFolder()
 	if err != nil {
@@ -177,7 +180,10 @@ func (s *TVScanner) ScanTV() (*[]TVScannerResult, error) {
 		return nil, errors.New("scanner is currently running")
 	}
 	s.isScanning = true
-	s.scanLock.Unlock()
+	defer func() {
+		s.isScanning = false
+		s.scanLock.Unlock()
+	}()
 
 	mediaFiles, err := s.scanTVFolder()
 	if err != nil {

@@ -18,13 +18,15 @@ func ScheduleScanner(cronStr string, movieScanner *MovieScanner, tvScanner *TVSc
 		movies, err := movieScanner.ScanMovies()
 		if err != nil {
 			log.Println("Error scanning movies:", err)
+		} else {
+			log.Println("Found", len(*movies), "new movies")
 		}
-		log.Println("Found", len(*movies), "new movies")
 		tvs, err := tvScanner.ScanTV()
 		if err != nil {
 			log.Println("Error scanning tvs:", err)
+		} else {
+			log.Println("Found", len(*tvs), "new tvs")
 		}
-		log.Println("Found", len(*tvs), "new tvs")
 		log.Println("Next scan scheduled for", cronTab.Next(time.Now()).Format(time.RFC1123))
 	})
 	if err != nil {
@@ -32,5 +34,4 @@ func ScheduleScanner(cronStr string, movieScanner *MovieScanner, tvScanner *TVSc
 	}
 	c.Start()
 	log.Println("Next scan scheduled for", cronTab.Next(time.Now()).Format(time.RFC1123))
-	select {}
 }
