@@ -16,7 +16,8 @@ WORKDIR /app/
 COPY --from=build /app/main .
 
 # Define your environment variables here
-ENV PORT=8080 \
+ENV TZ=Europe/Paris \
+    PORT=8080 \
     LOG_FILE=/var/logs/app/golang-app.log \
     MOVIE_SOURCE_FOLDER=/app/movies-source \
     MOVIE_TARGET_FOLDER=/app/movies-target \
@@ -28,7 +29,8 @@ ENV PORT=8080 \
     DB_PORT=5432 \
     DB_USER=bingemate \
     DB_PASSWORD=bingemate \
-    DB_NAME=bingemate
+    DB_NAME=bingemate \
+    SCAN_CRON="*/15 * * * *"
 
 # Expose the port on which the application will listen
 EXPOSE $PORT

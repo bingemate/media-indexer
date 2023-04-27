@@ -20,6 +20,7 @@ type Env struct {
 	DBUser            string `env:"DB_USER" envDefault:"postgres"`
 	DBPassword        string `env:"DB_PASSWORD" envDefault:"postgres"`
 	DBName            string `env:"DB_NAME" envDefault:"postgres"`
+	ScanCron          string `env:"SCAN_CRON" envDefault:"*/15 * * * *"`
 }
 
 func LoadEnv() (Env, error) {
