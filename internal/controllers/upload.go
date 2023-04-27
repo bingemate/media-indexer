@@ -31,7 +31,7 @@ func uploadMovie(c *gin.Context, mediaUploader *features.MediaUploader) {
 		c.JSON(400, gin.H{"error": "no files uploaded in upload[]"})
 		return
 	}
-
+	log.Println("Uploading", len(files), "movies...")
 	for _, file := range files {
 		err := mediaUploader.UploadMovie(c, file)
 		if err != nil {
@@ -54,7 +54,7 @@ func uploadTvShow(c *gin.Context, mediaUploader *features.MediaUploader) {
 		c.JSON(400, gin.H{"error": "no files uploaded in upload[]"})
 		return
 	}
-
+	log.Println("Uploading", len(files), "tv shows...")
 	for _, file := range files {
 		err := mediaUploader.UploadTV(c, file)
 		if err != nil {
