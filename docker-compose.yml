@@ -1,0 +1,42 @@
+version: '3.9'
+
+services:
+  db:
+    container_name: postgres
+    image: bitnami/postgresql:13
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRESQL_USERNAME: 'postgres'
+      POSTGRESQL_PASSWORD: 'postgres'
+      POSTGRESQL_DATABASE: 'postgres'
+    ports:
+      - "5432:5432"
+  app:
+    depends_on:
+      - db
+    container_name: app
+    build: .
+    volumes:
+      - app-logs:/var/log/app
+      - /home/nospy/Téléchargements/movie_source:/app/movies-source
+      - /home/nospy/Téléchargements/movie_dest:/app/movies-target
+      - /home/nospy/Téléchargements/tv_source:/app/tvshows-source
+      - /home/nospy/Téléchargements/tv_dest:/app/tvshows-target
+    environment:
+      TMDB_API_KEY: 18d4fc4221ec0823f4727f85d57cb6e6
+      DB_SYNC: true
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: postgres
+    ports:
+      - "8080:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 200M
+volumes:
+  db-data:
+  app-logs:

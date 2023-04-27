@@ -16,7 +16,7 @@ build-windows:
 
 build-docker:
 	@echo "Building Docker image..."
-	@docker build -t $(NAME) .
+	@docker build -t $(NAME):latest .
 
 db-compose-up:
 	@echo "==> Running docker-compose up"
