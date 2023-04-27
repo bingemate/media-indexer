@@ -17,6 +17,8 @@ type MovieScanner struct {
 	destination     string                      // Destination directory path to move the found movies.
 	mediaClient     pkg.MediaClient             // Media client object to search for movies on TMDB.
 	mediaRepository *repository.MediaRepository // Media repository object to save the media files and their details.
+	scanLock        sync.Mutex                  // Mutex lock to prevent concurrent scanning.
+	isScanning      bool                        // Boolean flag to indicate if the scanner is currently scanning.
 }
 
 // MovieScannerResult represents a struct that holds the results of scanning and moving movie files.
@@ -32,6 +34,8 @@ type TVScanner struct {
 	destination     string                      // Destination directory path to move the found TV shows.
 	mediaClient     pkg.MediaClient             // Media client object to search for TV shows on TMDB.
 	mediaRepository *repository.MediaRepository // Media repository object to save the media files and their details.
+	scanLock        sync.Mutex                  // Mutex lock to prevent concurrent scanning.
+	isScanning      bool                        // Boolean flag to indicate if the scanner is currently scanning.
 }
 
 // TVScannerResult represents a struct that holds the results of scanning and moving TV show files.
@@ -64,6 +68,15 @@ func NewTVScanner(source, destination string, mediaClient pkg.MediaClient, media
 // ScanMovies scans the source directory for movies and moves them to the destination directory.
 // It returns a slice of MovieScannerResult and an error if there is any.
 func (s *MovieScanner) ScanMovies() (*[]MovieScannerResult, error) {
+	// Locks the scanner to prevent concurrent scanning
+	s.scanLock.Lock()
+	if s.isScanning {
+		s.scanLock.Unlock()
+		return nil, errors.New("scanner is currently running")
+	}
+	s.isScanning = true
+	s.scanLock.Unlock()
+
 	mediaFiles, err := s.scanMovieFolder()
 	if err != nil {
 		return nil, err
@@ -157,6 +170,15 @@ func (s *MovieScanner) retrieveMovieList(mediaFiles *[]pkg.MovieFile) *pkg.Atomi
 // ScanTV scans the source directory for TV shows and moves them to the destination directory.
 // It returns a slice of TVScannerResult and an error if there is any.
 func (s *TVScanner) ScanTV() (*[]TVScannerResult, error) {
+	// Locks the scanner to prevent concurrent scanning
+	s.scanLock.Lock()
+	if s.isScanning {
+		s.scanLock.Unlock()
+		return nil, errors.New("scanner is currently running")
+	}
+	s.isScanning = true
+	s.scanLock.Unlock()
+
 	mediaFiles, err := s.scanTVFolder()
 	if err != nil {
 		return nil, err
