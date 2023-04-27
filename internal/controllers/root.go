@@ -16,6 +16,7 @@ func InitRouter(engine *gin.Engine, db *gorm.DB, env initializers.Env) {
 	var movieScanner = features.NewMovieScanner(env.MovieSourceFolder, env.MovieTargetFolder, mediaClient, mediaRepository)
 	var tvScanner = features.NewTVScanner(env.TvSourceFolder, env.TvTargetFolder, mediaClient, mediaRepository)
 	var mediaUploader = features.NewMediaUploader(env.TvSourceFolder, env.MovieSourceFolder)
+	features.ScheduleScanner(env.ScanCron, movieScanner, tvScanner)
 	InitScanController(engine.Group("/scan"), movieScanner, tvScanner)
 	InitUploadController(engine.Group("/upload"), mediaUploader)
 }
