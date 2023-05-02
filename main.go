@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	var server = flag.Bool("serve", false, "Run server")
+	var server = flag.Bool("serve", true, "Run server")
 	flag.Parse()
 	env, err := initializers.LoadEnv()
 	if err != nil {
@@ -16,6 +16,7 @@ func main() {
 	}
 	logFile := initializers.InitLog(env.LogFile)
 	defer logFile.Close()
+	//test(db)
 	if *server {
 		log.Println("Starting server mode...")
 		cmd.Serve(env)

@@ -1,8 +1,10 @@
 package pkg
 
 import (
+	"log"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -48,7 +50,7 @@ func SanitizeMovieFilename(filename string) (string, string) {
 }
 
 // SanitizeTVShowFilename separates a TV show filename into title, season number, and episode number
-func SanitizeTVShowFilename(filename string) (string, string, string) {
+func SanitizeTVShowFilename(filename string) (string, int, int) {
 	filename = strings.TrimSuffix(filename, filepath.Ext(filename))
 	for _, regex := range spaceRegexes {
 		filename = regex.ReplaceAllString(filename, " ")
@@ -65,18 +67,28 @@ func SanitizeTVShowFilename(filename string) (string, string, string) {
 
 	matches := tvShowRegex.FindStringSubmatch(filename)
 	if len(matches) < 3 {
-		return filename, "", ""
+		return filename, 0, 0
 	}
 
 	title := strings.TrimSpace(matches[1])
 	seasonNumberStr := matches[2]
 	episodeNumberStr := matches[3]
 
-	// Default to season 1 if no season number is specified
-	seasonNumber := "1"
-	if seasonNumberStr != "" {
-		seasonNumber = seasonNumberStr
+	episodeNumber, err := strconv.Atoi(episodeNumberStr)
+	if err != nil {
+		log.Println("Error parsing episode number: ", err)
+		episodeNumber = 0
 	}
 
-	return title, seasonNumber, episodeNumberStr
+	// Default to season 1 if no season number is specified
+	seasonNumber := 1
+	if seasonNumberStr != "" {
+		seasonNumber, err = strconv.Atoi(seasonNumberStr)
+		if err != nil {
+			log.Println("Error parsing season number: ", err)
+			seasonNumber = 1
+		}
+	}
+
+	return title, seasonNumber, episodeNumber
 }

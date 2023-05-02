@@ -14,6 +14,13 @@ type Env struct {
 	TvSourceFolder    string `env:"TV_SOURCE_FOLDER" envDefault:"./"`
 	TvTargetFolder    string `env:"TV_TARGET_FOLDER" envDefault:"./"`
 	TMDBApiKey        string `env:"TMDB_API_KEY" envDefault:""`
+	DBSync            bool   `env:"DB_SYNC" envDefault:"false"`
+	DBHost            string `env:"DB_HOST" envDefault:"localhost"`
+	DBPort            string `env:"DB_PORT" envDefault:"5432"`
+	DBUser            string `env:"DB_USER" envDefault:"postgres"`
+	DBPassword        string `env:"DB_PASSWORD" envDefault:"postgres"`
+	DBName            string `env:"DB_NAME" envDefault:"postgres"`
+	ScanCron          string `env:"SCAN_CRON" envDefault:"*/15 * * * *"`
 }
 
 func LoadEnv() (Env, error) {

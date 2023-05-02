@@ -21,3 +21,4 @@ bin/
 log.txt
 
 .env
+*.log
