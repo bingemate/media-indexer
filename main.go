@@ -7,6 +7,11 @@ import (
 	"log"
 )
 
+// @title Media Indexer API
+// @description This is the API for the Media Indexer application
+// @version 1.0
+// @host localhost:8080
+// @basePath /
 func main() {
 	var server = flag.Bool("serve", true, "Run server")
 	flag.Parse()
