@@ -1,6 +1,10 @@
 NAME="media-indexer"
 
 
+doc:
+	@echo "==> Running godoc"
+	@go install github.com/swaggo/swag/cmd/swag@latest
+	swag init
 
 build:
 	@echo "Building..."

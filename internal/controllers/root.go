@@ -9,6 +9,10 @@ import (
 	"gorm.io/gorm"
 )
 
+type errorResponse struct {
+	Error string `json:"error"`
+}
+
 func InitRouter(engine *gin.Engine, db *gorm.DB, env initializers.Env) {
 	engine.MaxMultipartMemory = 32 << 20 // 32 MiB per file upload fragment
 	var mediaClient = pkg.NewMediaClient(env.TMDBApiKey)

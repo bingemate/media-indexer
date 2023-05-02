@@ -20,6 +20,15 @@ func InitUploadController(engine *gin.RouterGroup, mediaUploader *features.Media
 	})
 }
 
+// @Summary		Upload Movies
+// @Description	Upload movies from the configured folder
+// @Tags			Upload
+// @Accept 		multipart/form-data
+// @Param			upload[] formData file true "Files to upload"
+// @Produce		json
+// @Success		200	{object} uploadResponse
+// @Failure		500	{object} errorResponse
+// @Router			/upload/movie [post]
 func uploadMovie(c *gin.Context, mediaUploader *features.MediaUploader) {
 	form, err := c.MultipartForm()
 	if err != nil {
@@ -43,6 +52,15 @@ func uploadMovie(c *gin.Context, mediaUploader *features.MediaUploader) {
 	c.JSON(200, uploadResponse{Message: "ok", Count: len(files)})
 }
 
+// @Summary		Upload TV Shows
+// @Description	Upload TV Shows from the configured folder
+// @Tags			Upload
+// @Accept 		multipart/form-data
+// @Param			upload[] formData file true "Files to upload"
+// @Produce		json
+// @Success		200	{object} uploadResponse
+// @Failure		500	{object} errorResponse
+// @Router			/upload/tv [post]
 func uploadTvShow(c *gin.Context, mediaUploader *features.MediaUploader) {
 	form, err := c.MultipartForm()
 	if err != nil {

@@ -1,0 +1,182 @@
+definitions:
+  controllers.errorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  controllers.movieScanResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/features.MovieScannerResult'
+        type: array
+    type: object
+  controllers.tvScanResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/features.TVScannerResult'
+        type: array
+    type: object
+  controllers.uploadResponse:
+    properties:
+      count:
+        type: integer
+      message:
+        type: string
+    type: object
+  features.MovieScannerResult:
+    properties:
+      destination:
+        description: Full destination path of the moved file.
+        type: string
+      movie:
+        allOf:
+        - $ref: '#/definitions/pkg.Movie'
+        description: Movie details returned by TMDB.
+      source:
+        description: Source filename.
+        type: string
+    type: object
+  features.TVScannerResult:
+    properties:
+      destination:
+        description: Full destination path of the moved file.
+        type: string
+      source:
+        description: Source filename.
+        type: string
+      tvepisode:
+        allOf:
+        - $ref: '#/definitions/pkg.TVEpisode'
+        description: TV episode details returned by TMDB.
+    type: object
+  pkg.Category:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  pkg.Movie:
+    properties:
+      categories:
+        items:
+          $ref: '#/definitions/pkg.Category'
+        type: array
+      id:
+        type: integer
+      name:
+        type: string
+      releaseDate:
+        type: string
+    type: object
+  pkg.TVEpisode:
+    properties:
+      categories:
+        items:
+          $ref: '#/definitions/pkg.Category'
+        type: array
+      episode:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+      releaseDate:
+        type: string
+      season:
+        type: integer
+      tvReleaseDate:
+        type: string
+      tvShowID:
+        type: integer
+    type: object
+info:
+  contact: {}
+paths:
+  /scan/movie:
+    post:
+      description: Scan movies from the configured folder
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.movieScanResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.errorResponse'
+      summary: Scan Movies
+      tags:
+      - Scan
+  /scan/tv:
+    post:
+      description: Scan TV Shows from the configured folder
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.tvScanResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.errorResponse'
+      summary: Scan TV Shows
+      tags:
+      - Scan
+  /upload/movie:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload movies from the configured folder
+      parameters:
+      - description: Files to upload
+        in: formData
+        name: upload[]
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.uploadResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.errorResponse'
+      summary: Upload Movies
+      tags:
+      - Upload
+  /upload/tv:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload TV Shows from the configured folder
+      parameters:
+      - description: Files to upload
+        in: formData
+        name: upload[]
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.uploadResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.errorResponse'
+      summary: Upload TV Shows
+      tags:
+      - Upload
+swagger: "2.0"
