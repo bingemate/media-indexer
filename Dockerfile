@@ -41,7 +41,7 @@ VOLUME /var/logs/app \
          /app/tvshows-source \
          /app/tvshows-target
 
-USER 1000
+USER 1000:100
 
 # Start the application
 CMD ["/app/main","-serve"]

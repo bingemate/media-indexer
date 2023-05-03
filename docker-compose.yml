@@ -18,7 +18,7 @@ services:
     container_name: app
     build: .
     volumes:
-      - app-logs:/var/log/app
+      - ./logs:/app/logs
       - /home/nospy/Téléchargements/movie_source:/app/movies-source
       - /home/nospy/Téléchargements/movie_dest:/app/movies-target
       - /home/nospy/Téléchargements/tv_source:/app/tvshows-source
