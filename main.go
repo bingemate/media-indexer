@@ -21,7 +21,6 @@ func main() {
 	}
 	logFile := initializers.InitLog(env.LogFile)
 	defer logFile.Close()
-	//test(db)
 	if *server {
 		log.Println("Starting server mode...")
 		cmd.Serve(env)
