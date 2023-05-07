@@ -27,6 +27,7 @@ func InitUploadController(engine *gin.RouterGroup, mediaUploader *features.Media
 // @Param			upload[] formData file true "Files to upload"
 // @Produce		json
 // @Success		200	{object} uploadResponse
+// @Failure		400	{object} errorResponse
 // @Failure		500	{object} errorResponse
 // @Router			/upload/movie [post]
 func uploadMovie(c *gin.Context, mediaUploader *features.MediaUploader) {
@@ -37,7 +38,7 @@ func uploadMovie(c *gin.Context, mediaUploader *features.MediaUploader) {
 	}
 	files := form.File["upload[]"]
 	if files == nil || len(files) == 0 {
-		c.JSON(400, gin.H{"error": "no files uploaded in upload[]"})
+		c.JSON(400, errorResponse{Error: "no files uploaded in upload[]"})
 		return
 	}
 	log.Println("Uploading", len(files), "movies...")
@@ -45,7 +46,7 @@ func uploadMovie(c *gin.Context, mediaUploader *features.MediaUploader) {
 		err := mediaUploader.UploadMovie(c, file)
 		if err != nil {
 			log.Println(err)
-			c.JSON(500, gin.H{"error": err.Error()})
+			c.JSON(500, errorResponse{Error: err.Error()})
 			return
 		}
 	}
@@ -59,6 +60,7 @@ func uploadMovie(c *gin.Context, mediaUploader *features.MediaUploader) {
 // @Param			upload[] formData file true "Files to upload"
 // @Produce		json
 // @Success		200	{object} uploadResponse
+// @Failure		400	{object} errorResponse
 // @Failure		500	{object} errorResponse
 // @Router			/upload/tv [post]
 func uploadTvShow(c *gin.Context, mediaUploader *features.MediaUploader) {
@@ -69,7 +71,7 @@ func uploadTvShow(c *gin.Context, mediaUploader *features.MediaUploader) {
 	}
 	files := form.File["upload[]"]
 	if files == nil || len(files) == 0 {
-		c.JSON(400, gin.H{"error": "no files uploaded in upload[]"})
+		c.JSON(400, errorResponse{Error: "no files uploaded in upload[]"})
 		return
 	}
 	log.Println("Uploading", len(files), "tv shows...")
@@ -77,7 +79,7 @@ func uploadTvShow(c *gin.Context, mediaUploader *features.MediaUploader) {
 		err := mediaUploader.UploadTV(c, file)
 		if err != nil {
 			log.Println(err)
-			c.JSON(500, gin.H{"error": err.Error()})
+			c.JSON(500, errorResponse{Error: err.Error()})
 			return
 		}
 	}
