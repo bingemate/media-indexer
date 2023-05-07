@@ -8,7 +8,7 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.2
 	github.com/gin-gonic/gin v1.9.0
 	github.com/joho/godotenv v1.5.1
-	github.com/robfig/cron/v3 v3.0.0
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/ryanbradynd05/go-tmdb v0.0.0-20230108222638-2a68dc6ff40c
 	github.com/spf13/cobra v1.7.0
 	github.com/swaggo/swag v1.16.1
