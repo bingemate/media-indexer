@@ -18,7 +18,7 @@ COPY --from=build /app/main .
 # Define your environment variables here
 ENV TZ=Europe/Paris \
     PORT=8080 \
-    LOG_FILE=/var/logs/app/golang-app.log \
+    LOG_FILE=/app/logs/golang-app.log \
     MOVIE_SOURCE_FOLDER=/app/movies-source \
     MOVIE_TARGET_FOLDER=/app/movies-target \
     TV_SOURCE_FOLDER=/app/tvshows-source \
