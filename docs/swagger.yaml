@@ -100,6 +100,21 @@ info:
   title: Media Indexer API
   version: "1.0"
 paths:
+  /ping:
+    get:
+      consumes:
+      - application/json
+      description: Ping
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: pong
+          schema:
+            type: string
+      summary: Ping
+      tags:
+      - Ping
   /scan/movie:
     post:
       description: Scan movies from the configured folder
