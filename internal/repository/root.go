@@ -54,6 +54,7 @@ func (r *MediaRepository) IndexMovie(movie pkg.Movie, destination, fileDestinati
 	}
 	if inDb != nil {
 		media.ID = inDb.ID
+		media.CreatedAt = inDb.CreatedAt
 	}
 	db := r.db.Save(&media)
 	if db.Error != nil {
@@ -105,6 +106,7 @@ func (r *MediaRepository) IndexTvEpisode(tvShow pkg.TVEpisode, destination, file
 	}
 	if inDb != nil {
 		media.ID = inDb.ID
+		media.CreatedAt = inDb.CreatedAt
 	}
 	db := r.db.Save(&media)
 	if db.Error != nil {
@@ -172,17 +174,20 @@ func (r *MediaRepository) clearDuplicatedMovie(tmdbID int, destination, fileDest
 	if movie.ID == "" {
 		return nil
 	}
+	if movie.MediaFileID == "" {
+		return r.db.Delete(&movie).Error
+	}
 	log.Printf("Removing duplicated movie %s", movie.Name)
-	err := r.removeMovie(movie.MediaID, movie.MediaFileID)
+	err := r.removeMediaFile(movie.MediaFileID)
 	if err != nil {
-		if movie.MediaFile.Filename != fileDestination {
-			log.Printf("Removing duplicated file %s", movie.MediaFile.Filename)
-			err := os.Remove(path.Join(destination, movie.MediaFile.Filename))
-			if err != nil {
-				return err
-			}
-		}
 		return err
+	}
+	if movie.MediaFile.Filename != fileDestination {
+		log.Printf("Removing duplicated file %s", movie.MediaFile.Filename)
+		err := os.Remove(path.Join(destination, movie.MediaFile.Filename))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -196,47 +201,26 @@ func (r *MediaRepository) clearDuplicatedEpisode(tmdbID int, destination, fileDe
 	if tvEpisode.ID == "" {
 		return nil
 	}
+	if tvEpisode.MediaFileID == "" {
+		return r.db.Delete(&tvEpisode).Error
+	}
 	log.Printf("Removing duplicated tv episode %s %dx%d", tvEpisode.Name, tvEpisode.NbSeason, tvEpisode.NbEpisode)
-	err := r.removeEpisode(tvEpisode.MediaID, tvEpisode.MediaFileID)
+	err := r.removeMediaFile(tvEpisode.MediaFileID)
 	if err != nil {
-		if tvEpisode.MediaFile.Filename != fileDestination {
-			log.Printf("Removing duplicated file %s", tvEpisode.MediaFile.Filename)
-			err := os.Remove(path.Join(destination, tvEpisode.MediaFile.Filename))
-			if err != nil {
-				return err
-			}
-		}
 		return err
+	}
+	if tvEpisode.MediaFile.Filename != fileDestination {
+		log.Printf("Removing duplicated file %s", tvEpisode.MediaFile.Filename)
+		err := os.Remove(path.Join(destination, tvEpisode.MediaFile.Filename))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func (r *MediaRepository) removeMovie(mediaID, fileID string) error {
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		//err := tx.Delete(&repository.Media{}, "id = ?", mediaID).Error
-		//if err != nil {
-		//	return err
-		//}
-		err := tx.Delete(&repository.MediaFile{}, "id = ?", fileID).Error
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-}
-
-func (r *MediaRepository) removeEpisode(mediaID, fileID string) error {
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		//err := tx.Delete(&repository.Media{}, "id = ?", mediaID).Error
-		//if err != nil {
-		//	return err
-		//}
-		err := tx.Delete(&repository.MediaFile{}, "id = ?", fileID).Error
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+func (r *MediaRepository) removeMediaFile(fileID string) error {
+	return r.db.Delete(&repository.MediaFile{}, "id = ?", fileID).Error
 }
 
 func (r *MediaRepository) getCategory(name string) (*repository.Category, error) {
