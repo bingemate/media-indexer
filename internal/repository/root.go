@@ -48,7 +48,14 @@ func (r *MediaRepository) IndexMovie(movie pkg.Movie, destination, fileDestinati
 	if err != nil {
 		return err
 	}
-	db := r.db.Create(&media)
+	inDb, err := r.findMedia(movie.ID)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+	if inDb != nil {
+		media.ID = inDb.ID
+	}
+	db := r.db.Save(&media)
 	if db.Error != nil {
 		return db.Error
 	}
@@ -92,7 +99,14 @@ func (r *MediaRepository) IndexTvEpisode(tvShow pkg.TVEpisode, destination, file
 	if err != nil {
 		return err
 	}
-	db := r.db.Create(&media)
+	inDb, err := r.findMedia(tvShow.ID)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+	if inDb != nil {
+		media.ID = inDb.ID
+	}
+	db := r.db.Save(&media)
 	if db.Error != nil {
 		return db.Error
 	}
@@ -199,11 +213,11 @@ func (r *MediaRepository) clearDuplicatedEpisode(tmdbID int, destination, fileDe
 
 func (r *MediaRepository) removeMovie(mediaID, fileID string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		err := tx.Delete(&repository.Media{}, "id = ?", mediaID).Error
-		if err != nil {
-			return err
-		}
-		err = tx.Delete(&repository.MediaFile{}, "id = ?", fileID).Error
+		//err := tx.Delete(&repository.Media{}, "id = ?", mediaID).Error
+		//if err != nil {
+		//	return err
+		//}
+		err := tx.Delete(&repository.MediaFile{}, "id = ?", fileID).Error
 		if err != nil {
 			return err
 		}
@@ -213,11 +227,11 @@ func (r *MediaRepository) removeMovie(mediaID, fileID string) error {
 
 func (r *MediaRepository) removeEpisode(mediaID, fileID string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		err := tx.Delete(&repository.Media{}, "id = ?", mediaID).Error
-		if err != nil {
-			return err
-		}
-		err = tx.Delete(&repository.MediaFile{}, "id = ?", fileID).Error
+		//err := tx.Delete(&repository.Media{}, "id = ?", mediaID).Error
+		//if err != nil {
+		//	return err
+		//}
+		err := tx.Delete(&repository.MediaFile{}, "id = ?", fileID).Error
 		if err != nil {
 			return err
 		}
@@ -253,4 +267,13 @@ func (r *MediaRepository) handleTvShow(name string, tmdbID int, releaseDate time
 		},
 		Name: name,
 	}, nil
+}
+
+func (r *MediaRepository) findMedia(tmdbID int) (*repository.Media, error) {
+	var media repository.Media
+	db := r.db.Where("tmdb_id = ?", tmdbID).First(&media)
+	if db.Error != nil {
+		return nil, db.Error
+	}
+	return &media, nil
 }
