@@ -28,9 +28,6 @@ definitions:
     type: object
   features.MovieScannerResult:
     properties:
-      destination:
-        description: Full destination path of the moved file.
-        type: string
       movie:
         allOf:
         - $ref: '#/definitions/pkg.Movie'
@@ -41,9 +38,6 @@ definitions:
     type: object
   features.TVScannerResult:
     properties:
-      destination:
-        description: Full destination path of the moved file.
-        type: string
       source:
         description: Source filename.
         type: string

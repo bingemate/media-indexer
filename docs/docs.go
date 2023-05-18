@@ -225,10 +225,6 @@ const docTemplate = `{
         "features.MovieScannerResult": {
             "type": "object",
             "properties": {
-                "destination": {
-                    "description": "Full destination path of the moved file.",
-                    "type": "string"
-                },
                 "movie": {
                     "description": "Movie details returned by TMDB.",
                     "allOf": [
@@ -246,10 +242,6 @@ const docTemplate = `{
         "features.TVScannerResult": {
             "type": "object",
             "properties": {
-                "destination": {
-                    "description": "Full destination path of the moved file.",
-                    "type": "string"
-                },
                 "source": {
                     "description": "Source filename.",
                     "type": "string"
