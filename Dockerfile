@@ -16,7 +16,8 @@ WORKDIR /app/
 COPY --from=build /app/main .
 
 # Define your environment variables here
-ENV TZ=Europe/Paris \
+ENV GOMEMLIMIT=200MiB \
+    TZ=Europe/Paris \
     PORT=8080 \
     LOG_FILE=/app/logs/golang-app.log \
     MOVIE_SOURCE_FOLDER=/app/movies-source \
