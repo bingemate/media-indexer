@@ -20,9 +20,8 @@ services:
     volumes:
       - ./logs:/app/logs
       - /home/nospy/Téléchargements/movie_source:/app/movies-source
-      - /home/nospy/Téléchargements/movie_dest:/app/movies-target
+      - /home/nospy/Téléchargements/streaming:/app/media-target
       - /home/nospy/Téléchargements/tv_source:/app/tvshows-source
-      - /home/nospy/Téléchargements/tv_dest:/app/tvshows-target
     environment:
       TMDB_API_KEY: 18d4fc4221ec0823f4727f85d57cb6e6
       DB_SYNC: true

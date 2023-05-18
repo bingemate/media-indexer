@@ -21,9 +21,9 @@ ENV GOMEMLIMIT=200MiB \
     PORT=8080 \
     LOG_FILE=/app/logs/golang-app.log \
     MOVIE_SOURCE_FOLDER=/app/movies-source \
-    MOVIE_TARGET_FOLDER=/app/movies-target \
+    MOVIE_TARGET_FOLDER=/app/media-target \
     TV_SOURCE_FOLDER=/app/tvshows-source \
-    TV_TARGET_FOLDER=/app/tvshows-target \
+    TV_TARGET_FOLDER=/app/media-target \
     TMDB_API_KEY="" \
     DB_SYNC=true \
     DB_HOST=127.0.0.1 \
@@ -38,9 +38,9 @@ EXPOSE $PORT
 
 VOLUME /var/logs/app \
          /app/movies-source \
-         /app/movies-target \
+         /app/media-target \
          /app/tvshows-source \
-         /app/tvshows-target
+         /app/media-target
 
 USER 1000:100
 
