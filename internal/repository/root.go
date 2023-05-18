@@ -126,7 +126,7 @@ func (r *MediaRepository) IndexTvEpisode(tvShow pkg.TVEpisode, fileSource, desti
 		return err
 	}
 
-	media.Categories = *r.extractCategories(&tvShow.Categories)
+	//media.Categories = *r.extractCategories(&tvShow.Categories)
 	media.Episodes = []repository.Episode{
 		{
 			TvShow:    *tvShowEntity,
@@ -267,7 +267,7 @@ func (r *MediaRepository) handleTvShow(name string, tmdbID int, releaseDate time
 	if alreadyInDB.ID != "" {
 		return &alreadyInDB, nil
 	}
-	return &repository.TvShow{
+	entity := &repository.TvShow{
 		Media: repository.Media{
 			MediaType:   repository.MediaTypeTvShow,
 			TmdbID:      tmdbID,
@@ -275,7 +275,12 @@ func (r *MediaRepository) handleTvShow(name string, tmdbID int, releaseDate time
 			Categories:  *r.extractCategories(categories),
 		},
 		Name: name,
-	}, nil
+	}
+	db = r.db.Save(entity)
+	if db.Error != nil {
+		return nil, db.Error
+	}
+	return entity, nil
 }
 
 func (r *MediaRepository) findMedia(tmdbID int) (*repository.Media, error) {
