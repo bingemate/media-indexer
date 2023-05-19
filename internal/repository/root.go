@@ -191,7 +191,7 @@ func (r *MediaRepository) extractCategories(pkgCategories *[]pkg.Category) *[]re
 
 func (r *MediaRepository) clearDuplicatedMovie(tmdbID int, destination, fileDestination string) error {
 	var movie repository.Movie
-	db := r.db.Joins("Media").Joins("MediaFile").Where("media.id = ?", tmdbID).First(&movie)
+	db := r.db.Joins("Media").Joins("MediaFile").Where(`"Media".id = ?`, tmdbID).First(&movie)
 	if db.Error != nil && !errors.Is(db.Error, gorm.ErrRecordNotFound) {
 		return db.Error
 	}
@@ -216,7 +216,7 @@ func (r *MediaRepository) clearDuplicatedMovie(tmdbID int, destination, fileDest
 
 func (r *MediaRepository) clearDuplicatedEpisode(tmdbID int, destination, fileDestination string) error {
 	var tvEpisode repository.Episode
-	db := r.db.Joins("Media").Joins("MediaFile").Where("media.id = ?", tmdbID).First(&tvEpisode)
+	db := r.db.Joins("Media").Joins("MediaFile").Where(`"Media".id = ?`, tmdbID).First(&tvEpisode)
 	if db.Error != nil && !errors.Is(db.Error, gorm.ErrRecordNotFound) {
 		return db.Error
 	}
@@ -254,7 +254,7 @@ func (r *MediaRepository) getCategory(name string) (*repository.Category, error)
 
 func (r *MediaRepository) handleTvShow(name string, tmdbID int, releaseDate time.Time, categories *[]pkg.Category) (*repository.TvShow, error) {
 	var alreadyInDB repository.TvShow
-	db := r.db.Joins("Media").Where("media.id = ?", tmdbID).First(&alreadyInDB)
+	db := r.db.Joins("Media").Where(`"Media".id = ?`, tmdbID).First(&alreadyInDB)
 	if db.Error != nil && !errors.Is(db.Error, gorm.ErrRecordNotFound) {
 		log.Println(db.Error)
 		return nil, db.Error
