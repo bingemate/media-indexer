@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strconv"
 	"time"
 )
 
@@ -35,8 +36,8 @@ func (r *MediaRepository) IndexMovie(movie pkg.Movie, fileSource, destinationPat
 	}
 
 	media := repository.Media{
+		ID:          movie.ID,
 		MediaType:   repository.MediaTypeMovie,
-		TmdbID:      movie.ID,
 		ReleaseDate: releaseDate,
 	}
 	inDb, err := r.findMedia(movie.ID)
@@ -44,7 +45,6 @@ func (r *MediaRepository) IndexMovie(movie pkg.Movie, fileSource, destinationPat
 		return err
 	}
 	if inDb != nil {
-		media.ID = inDb.ID
 		media.CreatedAt = inDb.CreatedAt
 	}
 	db := r.db.Save(&media)
@@ -52,13 +52,13 @@ func (r *MediaRepository) IndexMovie(movie pkg.Movie, fileSource, destinationPat
 		return db.Error
 	}
 
-	err = r.clearDuplicatedMovie(media.TmdbID, destinationPath, fileSource)
+	err = r.clearDuplicatedMovie(media.ID, destinationPath, fileSource)
 	if err != nil {
 		return err
 	}
 
 	// Transcode movie here and retrieve file destination infos
-	response, err := transcoder.ProcessFileTranscode(fileSource, media.ID, destinationPath, "15", "1280:720")
+	response, err := transcoder.ProcessFileTranscode(fileSource, strconv.Itoa(media.ID), destinationPath, "15", "1280:720")
 	if err != nil {
 		return err
 	}
@@ -98,8 +98,8 @@ func (r *MediaRepository) IndexTvEpisode(tvShow pkg.TVEpisode, fileSource, desti
 	}
 
 	media := repository.Media{
+		ID:          tvShow.ID,
 		MediaType:   repository.MediaTypeEpisode,
-		TmdbID:      tvShow.ID,
 		ReleaseDate: episodeReleaseDate,
 	}
 	inDb, err := r.findMedia(tvShow.ID)
@@ -107,7 +107,6 @@ func (r *MediaRepository) IndexTvEpisode(tvShow pkg.TVEpisode, fileSource, desti
 		return err
 	}
 	if inDb != nil {
-		media.ID = inDb.ID
 		media.CreatedAt = inDb.CreatedAt
 	}
 	db := r.db.Save(&media)
@@ -115,13 +114,13 @@ func (r *MediaRepository) IndexTvEpisode(tvShow pkg.TVEpisode, fileSource, desti
 		return db.Error
 	}
 
-	err = r.clearDuplicatedEpisode(media.TmdbID, destinationPath, fileSource)
+	err = r.clearDuplicatedEpisode(media.ID, destinationPath, fileSource)
 	if err != nil {
 		return err
 	}
 
 	// Transcode episode here and retrieve file destination infos
-	response, err := transcoder.ProcessFileTranscode(fileSource, media.ID, destinationPath, "15", "1280:720")
+	response, err := transcoder.ProcessFileTranscode(fileSource, strconv.Itoa(media.ID), destinationPath, "15", "1280:720")
 	if err != nil {
 		return err
 	}
@@ -192,7 +191,7 @@ func (r *MediaRepository) extractCategories(pkgCategories *[]pkg.Category) *[]re
 
 func (r *MediaRepository) clearDuplicatedMovie(tmdbID int, destination, fileDestination string) error {
 	var movie repository.Movie
-	db := r.db.Joins("Media").Joins("MediaFile").Where("tmdb_id = ?", tmdbID).First(&movie)
+	db := r.db.Joins("Media").Joins("MediaFile").Where("media.id = ?", tmdbID).First(&movie)
 	if db.Error != nil && !errors.Is(db.Error, gorm.ErrRecordNotFound) {
 		return db.Error
 	}
@@ -207,19 +206,17 @@ func (r *MediaRepository) clearDuplicatedMovie(tmdbID int, destination, fileDest
 	if err != nil {
 		return err
 	}
-	if movie.MediaFile.Filename != fileDestination {
-		log.Printf("Removing duplicated file %s", movie.MediaFile.Filename)
-		err := os.RemoveAll(path.Join(destination, movie.MediaID))
-		if err != nil {
-			return err
-		}
+	log.Printf("Removing duplicated file %s", movie.MediaFile.Filename)
+	err = os.RemoveAll(path.Join(destination, strconv.Itoa(tmdbID)))
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
 func (r *MediaRepository) clearDuplicatedEpisode(tmdbID int, destination, fileDestination string) error {
 	var tvEpisode repository.Episode
-	db := r.db.Joins("Media").Joins("MediaFile").Where("tmdb_id = ?", tmdbID).First(&tvEpisode)
+	db := r.db.Joins("Media").Joins("MediaFile").Where("media.id = ?", tmdbID).First(&tvEpisode)
 	if db.Error != nil && !errors.Is(db.Error, gorm.ErrRecordNotFound) {
 		return db.Error
 	}
@@ -234,12 +231,10 @@ func (r *MediaRepository) clearDuplicatedEpisode(tmdbID int, destination, fileDe
 	if err != nil {
 		return err
 	}
-	if tvEpisode.MediaFile.Filename != fileDestination {
-		log.Printf("Removing duplicated file %s", tvEpisode.MediaFile.Filename)
-		err := os.RemoveAll(path.Join(destination, tvEpisode.MediaID))
-		if err != nil {
-			return err
-		}
+	log.Printf("Removing duplicated file %s", tvEpisode.MediaFile.Filename)
+	err = os.RemoveAll(path.Join(destination, strconv.Itoa(tmdbID)))
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -259,7 +254,7 @@ func (r *MediaRepository) getCategory(name string) (*repository.Category, error)
 
 func (r *MediaRepository) handleTvShow(name string, tmdbID int, releaseDate time.Time, categories *[]pkg.Category) (*repository.TvShow, error) {
 	var alreadyInDB repository.TvShow
-	db := r.db.Joins("Media").Where("tmdb_id = ?", tmdbID).First(&alreadyInDB)
+	db := r.db.Joins("Media").Where("media.id = ?", tmdbID).First(&alreadyInDB)
 	if db.Error != nil && !errors.Is(db.Error, gorm.ErrRecordNotFound) {
 		log.Println(db.Error)
 		return nil, db.Error
@@ -269,8 +264,8 @@ func (r *MediaRepository) handleTvShow(name string, tmdbID int, releaseDate time
 	}
 	entity := &repository.TvShow{
 		Media: repository.Media{
+			ID:          tmdbID,
 			MediaType:   repository.MediaTypeTvShow,
-			TmdbID:      tmdbID,
 			ReleaseDate: releaseDate,
 			Categories:  *r.extractCategories(categories),
 		},
@@ -285,7 +280,7 @@ func (r *MediaRepository) handleTvShow(name string, tmdbID int, releaseDate time
 
 func (r *MediaRepository) findMedia(tmdbID int) (*repository.Media, error) {
 	var media repository.Media
-	db := r.db.Where("tmdb_id = ?", tmdbID).First(&media)
+	db := r.db.Where("id = ?", tmdbID).First(&media)
 	if db.Error != nil {
 		return nil, db.Error
 	}
