@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 	"github.com/bingemate/media-go-pkg/repository"
 	"github.com/bingemate/media-go-pkg/transcoder"
 	"github.com/bingemate/media-indexer/pkg"
@@ -38,21 +39,22 @@ func (r *MediaRepository) IndexMovie(movie pkg.Movie, fileSource, destinationPat
 	media := repository.Media{
 		ID:          movie.ID,
 		MediaType:   repository.MediaTypeMovie,
+		Name:        movie.Name,
 		ReleaseDate: releaseDate,
 	}
-	inDb, err := r.findMedia(movie.ID)
+	inDB, err := r.findMedia(movie.ID)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
-	if inDb != nil {
-		media.CreatedAt = inDb.CreatedAt
+	if inDB != nil {
+		media.CreatedAt = inDB.CreatedAt
 	}
 	db := r.db.Save(&media)
 	if db.Error != nil {
 		return db.Error
 	}
 
-	err = r.clearDuplicatedMovie(media.ID, destinationPath, fileSource)
+	err = r.clearDuplicatedMovie(media.ID, destinationPath)
 	if err != nil {
 		return err
 	}
@@ -101,20 +103,21 @@ func (r *MediaRepository) IndexTvEpisode(tvShow pkg.TVEpisode, fileSource, desti
 		ID:          tvShow.ID,
 		MediaType:   repository.MediaTypeEpisode,
 		ReleaseDate: episodeReleaseDate,
+		Name:        fmt.Sprintf("%s - %dx%.2d", tvShow.Name, tvShow.Season, tvShow.Episode),
 	}
-	inDb, err := r.findMedia(tvShow.ID)
+	inDB, err := r.findMedia(tvShow.ID)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
-	if inDb != nil {
-		media.CreatedAt = inDb.CreatedAt
+	if inDB != nil {
+		media.CreatedAt = inDB.CreatedAt
 	}
 	db := r.db.Save(&media)
 	if db.Error != nil {
 		return db.Error
 	}
 
-	err = r.clearDuplicatedEpisode(media.ID, destinationPath, fileSource)
+	err = r.clearDuplicatedEpisode(media.ID, destinationPath)
 	if err != nil {
 		return err
 	}
@@ -189,7 +192,7 @@ func (r *MediaRepository) extractCategories(pkgCategories *[]pkg.Category) *[]re
 	return &categories
 }
 
-func (r *MediaRepository) clearDuplicatedMovie(tmdbID int, destination, fileDestination string) error {
+func (r *MediaRepository) clearDuplicatedMovie(tmdbID int, destination string) error {
 	var movie repository.Movie
 	db := r.db.Joins("Media").Joins("MediaFile").Where(`"Media".id = ?`, tmdbID).First(&movie)
 	if db.Error != nil && !errors.Is(db.Error, gorm.ErrRecordNotFound) {
@@ -214,7 +217,7 @@ func (r *MediaRepository) clearDuplicatedMovie(tmdbID int, destination, fileDest
 	return nil
 }
 
-func (r *MediaRepository) clearDuplicatedEpisode(tmdbID int, destination, fileDestination string) error {
+func (r *MediaRepository) clearDuplicatedEpisode(tmdbID int, destination string) error {
 	var tvEpisode repository.Episode
 	db := r.db.Joins("Media").Joins("MediaFile").Where(`"Media".id = ?`, tmdbID).First(&tvEpisode)
 	if db.Error != nil && !errors.Is(db.Error, gorm.ErrRecordNotFound) {
@@ -267,6 +270,7 @@ func (r *MediaRepository) handleTvShow(name string, tmdbID int, releaseDate time
 			ID:          tmdbID,
 			MediaType:   repository.MediaTypeTvShow,
 			ReleaseDate: releaseDate,
+			Name:        name,
 			Categories:  *r.extractCategories(categories),
 		},
 		Name: name,
