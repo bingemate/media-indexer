@@ -31,12 +31,13 @@ services:
       DB_PASSWORD: postgres
       DB_NAME: postgres
       SCAN_CRON: "*/15 * * * *"
+      TZ: Europe/Paris
     ports:
       - "8080:8080"
     deploy:
       resources:
         limits:
-          memory: 2048M
+          memory: 1024M
 volumes:
   db-data:
   app-logs:

@@ -71,11 +71,15 @@ func (s *MovieScanner) ScanMovies() (*[]MovieScannerResult, error) {
 	}
 	defer scannerMutex.Unlock()
 
+	uploadLocked := uploadLock.TryLock()
+	if !uploadLocked {
+		return nil, errors.New("upload is currently running")
+	}
+	defer uploadLock.Unlock()
 	mediaFiles, err := s.scanMovieFolder()
 	if err != nil {
 		return nil, err
 	}
-
 	atomicMovieList := s.retrieveMovieList(mediaFiles)
 
 	result := s.buildMovieScannerResult(atomicMovieList)
@@ -170,6 +174,11 @@ func (s *TVScanner) ScanTV() (*[]TVScannerResult, error) {
 	}
 	defer scannerMutex.Unlock()
 
+	uploadLocked := uploadLock.TryLock()
+	if !uploadLocked {
+		return nil, errors.New("upload is currently running")
+	}
+	defer uploadLock.Unlock()
 	mediaFiles, err := s.scanTVFolder()
 	if err != nil {
 		return nil, err
