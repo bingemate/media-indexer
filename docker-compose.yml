@@ -37,7 +37,6 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '4.0'
           memory: 1024M
 volumes:
   db-data:
