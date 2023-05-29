@@ -2,13 +2,15 @@ package features
 
 import (
 	"errors"
-	"fmt"
 	"github.com/bingemate/media-indexer/internal/repository"
 	"github.com/bingemate/media-indexer/pkg"
 	"log"
 	"path"
-	"path/filepath"
 	"sync"
+)
+
+var (
+	scannerMutex = &sync.Mutex{}
 )
 
 // MovieScanner represents a struct that scans movie folders to search for movie files and move them.
@@ -17,15 +19,12 @@ type MovieScanner struct {
 	destination     string                      // Destination directory path to move the found movies.
 	mediaClient     pkg.MediaClient             // Media client object to search for movies on TMDB.
 	mediaRepository *repository.MediaRepository // Media repository object to save the media files and their details.
-	scanLock        sync.Mutex                  // Mutex lock to prevent concurrent scanning.
-	isScanning      bool                        // Boolean flag to indicate if the scanner is currently scanning.
 }
 
 // MovieScannerResult represents a struct that holds the results of scanning and moving movie files.
 type MovieScannerResult struct {
-	Source      string    // Source filename.
-	Destination string    // Full destination path of the moved file.
-	Movie       pkg.Movie // Movie details returned by TMDB.
+	Source string    // Source filename.
+	Movie  pkg.Movie // Movie details returned by TMDB.
 }
 
 // TVScanner represents a struct that scans TV show folders to search for TV show files and move them.
@@ -34,15 +33,12 @@ type TVScanner struct {
 	destination     string                      // Destination directory path to move the found TV shows.
 	mediaClient     pkg.MediaClient             // Media client object to search for TV shows on TMDB.
 	mediaRepository *repository.MediaRepository // Media repository object to save the media files and their details.
-	scanLock        sync.Mutex                  // Mutex lock to prevent concurrent scanning.
-	isScanning      bool                        // Boolean flag to indicate if the scanner is currently scanning.
 }
 
 // TVScannerResult represents a struct that holds the results of scanning and moving TV show files.
 type TVScannerResult struct {
-	Source      string        // Source filename.
-	Destination string        // Full destination path of the moved file.
-	TVEpisode   pkg.TVEpisode // TV episode details returned by TMDB.
+	Source    string        // Source filename.
+	TVEpisode pkg.TVEpisode // TV episode details returned by TMDB.
 }
 
 // NewMovieScanner returns a new instance of MovieScanner with given source directory, target directory, and TMDB API key.
@@ -69,30 +65,29 @@ func NewTVScanner(source, destination string, mediaClient pkg.MediaClient, media
 // It returns a slice of MovieScannerResult and an error if there is any.
 func (s *MovieScanner) ScanMovies() (*[]MovieScannerResult, error) {
 	// Locks the scanner to prevent concurrent scanning
-	s.scanLock.Lock()
-	if s.isScanning {
-		s.scanLock.Unlock()
+	locked := scannerMutex.TryLock()
+	if !locked {
 		return nil, errors.New("scanner is currently running")
 	}
-	s.isScanning = true
-	defer func() {
-		s.isScanning = false
-		s.scanLock.Unlock()
-	}()
+	defer scannerMutex.Unlock()
 
+	uploadLocked := uploadLock.TryLock()
+	if !uploadLocked {
+		return nil, errors.New("upload is currently running")
+	}
+	defer uploadLock.Unlock()
 	mediaFiles, err := s.scanMovieFolder()
 	if err != nil {
 		return nil, err
 	}
-
 	atomicMovieList := s.retrieveMovieList(mediaFiles)
 
 	result := s.buildMovieScannerResult(atomicMovieList)
 
-	log.Printf("Moving %d movies to %s...", len(*result), s.destination)
+	//log.Printf("Moving %d movies to %s...", len(*result), s.destination)
 
 	// Moves the movies to the destination directory and returns an error if it fails
-	err = s.moveMovies(atomicMovieList, s.destination)
+	err = s.processMovies(atomicMovieList, s.destination)
 	if err != nil {
 		log.Printf("Failed to move movies to %s: %v", s.destination, err)
 		return nil, err
@@ -117,9 +112,8 @@ func (s *MovieScanner) buildMovieScannerResult(atomicMediaList *pkg.AtomicMovieL
 	// Iterates through each media file and its corresponding movie information in the AtomicMovieList and adds it to the result slice
 	for mediaFile, media := range atomicMediaList.GetAll() {
 		result = append(result, MovieScannerResult{
-			Source:      mediaFile.Filename,
-			Destination: buildMovieFilename(media, mediaFile.Extension),
-			Movie:       media,
+			Source: mediaFile.Filename,
+			Movie:  media,
 		})
 	}
 	return &result
@@ -174,17 +168,17 @@ func (s *MovieScanner) retrieveMovieList(mediaFiles *[]pkg.MovieFile) *pkg.Atomi
 // It returns a slice of TVScannerResult and an error if there is any.
 func (s *TVScanner) ScanTV() (*[]TVScannerResult, error) {
 	// Locks the scanner to prevent concurrent scanning
-	s.scanLock.Lock()
-	if s.isScanning {
-		s.scanLock.Unlock()
+	locked := scannerMutex.TryLock()
+	if !locked {
 		return nil, errors.New("scanner is currently running")
 	}
-	s.isScanning = true
-	defer func() {
-		s.isScanning = false
-		s.scanLock.Unlock()
-	}()
+	defer scannerMutex.Unlock()
 
+	uploadLocked := uploadLock.TryLock()
+	if !uploadLocked {
+		return nil, errors.New("upload is currently running")
+	}
+	defer uploadLock.Unlock()
 	mediaFiles, err := s.scanTVFolder()
 	if err != nil {
 		return nil, err
@@ -194,10 +188,10 @@ func (s *TVScanner) ScanTV() (*[]TVScannerResult, error) {
 
 	result := s.buildTVScannerResult(atomicMediaList)
 
-	log.Printf("Moving %d TV shows to %s...", len(*result), s.destination)
+	//log.Printf("Moving %d TV shows to %s...", len(*result), s.destination)
 
 	// Moves the TV shows to the destination directory and returns an error if it fails
-	err = s.moveTVEpisodes(atomicMediaList, s.destination)
+	err = s.processTVEpisodes(atomicMediaList, s.destination)
 	if err != nil {
 		log.Printf("Failed to move TV shows to %s: %v", s.destination, err)
 		return nil, err
@@ -222,9 +216,8 @@ func (s *TVScanner) buildTVScannerResult(atomicMediaList *pkg.AtomicTVEpisodeLis
 	// Iterates through each media file and its corresponding TV show information in the AtomicMovieList and adds it to the result slice
 	for mediaFile, media := range atomicMediaList.GetAll() {
 		result = append(result, TVScannerResult{
-			Source:      mediaFile.Filename,
-			Destination: filepath.Join(media.Name, buildTVEpisodeFilename(media, mediaFile.Extension)),
-			TVEpisode:   media,
+			Source:    mediaFile.Filename,
+			TVEpisode: media,
 		})
 	}
 	return &result
@@ -299,24 +292,15 @@ func searchTVEpisode(mediaFile *pkg.TVShowFile, client pkg.MediaClient) (pkg.TVE
 	return result, true
 }
 
-// moveMovies moves the media files to the destination directory path provided as argument.
+// processMovies moves the media files to the destination directory path provided as argument.
 // It returns an error if the destination directory does not exist or if there was an error while moving the file.
-func (s *MovieScanner) moveMovies(movieList *pkg.AtomicMovieList, destination string) error {
+func (s *MovieScanner) processMovies(movieList *pkg.AtomicMovieList, destination string) error {
 	if !pkg.IsDirectoryExists(destination) {
 		return errors.New("destination directory does not exists")
 	}
 	for mediaFile, media := range movieList.GetAll() {
 		var source = path.Join(mediaFile.Path, mediaFile.Filename)
-		var movieFilename = buildMovieFilename(media, mediaFile.Extension)
-		var destination = path.Join(
-			destination,
-			movieFilename,
-		)
-		err := pkg.MoveFile(source, destination)
-		if err != nil {
-			return err
-		}
-		err = s.mediaRepository.IndexMovie(media, s.destination, movieFilename)
+		err := s.mediaRepository.IndexMovie(media, source, s.destination)
 		if err != nil {
 			return err
 		}
@@ -325,42 +309,20 @@ func (s *MovieScanner) moveMovies(movieList *pkg.AtomicMovieList, destination st
 	return nil
 }
 
-// moveTVEpisodes moves the media files to the destination directory path provided as argument.
+// processTVEpisodes moves the media files to the destination directory path provided as argument.
 // It returns an error if the destination directory does not exist or if there was an error while moving the file.
-func (s *TVScanner) moveTVEpisodes(tvList *pkg.AtomicTVEpisodeList, destination string) error {
+func (s *TVScanner) processTVEpisodes(tvList *pkg.AtomicTVEpisodeList, destination string) error {
 	if !pkg.IsDirectoryExists(destination) {
 		return errors.New("destination directory does not exists")
 	}
+
 	for mediaFile, media := range tvList.GetAll() {
 		var source = path.Join(mediaFile.Path, mediaFile.Filename)
-		var episodeFilename = buildTVEpisodeFilename(media, mediaFile.Extension)
-		var destination = path.Join(
-			destination,
-			media.Name,
-			episodeFilename,
-		)
-		err := pkg.MoveFile(source, destination)
-		if err != nil {
-			return err
-		}
-		err = s.mediaRepository.IndexTvEpisode(
-			media, path.Join(s.destination, media.Name),
-			episodeFilename,
-		)
+		err := s.mediaRepository.IndexTvEpisode(media, source, s.destination)
 		if err != nil {
 			return err
 		}
 		log.Printf("Processed %-60s - %s %s", mediaFile.Filename, media.Name, media.Year())
 	}
 	return nil
-}
-
-// buildTVEpisodeFilename builds a TV show filename using the TV show name, season and episode number.
-func buildTVEpisodeFilename(media pkg.TVEpisode, extension string) string {
-	return fmt.Sprintf("%s - S%dE%.2d%s", media.Name, media.Season, media.Episode, extension)
-}
-
-// buildMovieFilename builds a movie filename using the movie name and year.
-func buildMovieFilename(media pkg.Movie, extension string) string {
-	return fmt.Sprintf("%s - %s%s", media.Name, media.Year(), extension)
 }

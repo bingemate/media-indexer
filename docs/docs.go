@@ -16,6 +16,29 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/ping": {
+            "get": {
+                "description": "Ping",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Ping"
+                ],
+                "summary": "Ping",
+                "responses": {
+                    "200": {
+                        "description": "pong",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/scan/movie": {
             "post": {
                 "description": "Scan movies from the configured folder",
@@ -97,6 +120,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/controllers.uploadResponse"
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.errorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -133,6 +162,12 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controllers.uploadResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.errorResponse"
                         }
                     },
                     "500": {
@@ -190,10 +225,6 @@ const docTemplate = `{
         "features.MovieScannerResult": {
             "type": "object",
             "properties": {
-                "destination": {
-                    "description": "Full destination path of the moved file.",
-                    "type": "string"
-                },
                 "movie": {
                     "description": "Movie details returned by TMDB.",
                     "allOf": [
@@ -211,10 +242,6 @@ const docTemplate = `{
         "features.TVScannerResult": {
             "type": "object",
             "properties": {
-                "destination": {
-                    "description": "Full destination path of the moved file.",
-                    "type": "string"
-                },
                 "source": {
                     "description": "Source filename.",
                     "type": "string"

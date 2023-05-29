@@ -28,9 +28,6 @@ definitions:
     type: object
   features.MovieScannerResult:
     properties:
-      destination:
-        description: Full destination path of the moved file.
-        type: string
       movie:
         allOf:
         - $ref: '#/definitions/pkg.Movie'
@@ -41,9 +38,6 @@ definitions:
     type: object
   features.TVScannerResult:
     properties:
-      destination:
-        description: Full destination path of the moved file.
-        type: string
       source:
         description: Source filename.
         type: string
@@ -100,6 +94,21 @@ info:
   title: Media Indexer API
   version: "1.0"
 paths:
+  /ping:
+    get:
+      consumes:
+      - application/json
+      description: Ping
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: pong
+          schema:
+            type: string
+      summary: Ping
+      tags:
+      - Ping
   /scan/movie:
     post:
       description: Scan movies from the configured folder
@@ -152,6 +161,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/controllers.uploadResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -177,6 +190,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/controllers.uploadResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
