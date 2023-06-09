@@ -131,8 +131,8 @@ func (r *MediaRepository) IndexTvEpisode(tvEpisode pkg.TVEpisode, fileSource, de
 	return nil
 }
 
-func (r *MediaRepository) extractMediaFile(mediaData *pkg.MediaData, transcoderResponse *transcoder.TranscodeResponse) repository.MediaFile {
-	return repository.MediaFile{
+func (r *MediaRepository) extractMediaFile(mediaData *pkg.MediaData, transcoderResponse *transcoder.TranscodeResponse) *repository.MediaFile {
+	return &repository.MediaFile{
 		Filename:  transcoderResponse.VideoIndex,
 		Duration:  mediaData.Duration,
 		Audios:    *r.extractAudio(&mediaData.Audios, transcoderResponse),
