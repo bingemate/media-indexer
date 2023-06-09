@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 	"github.com/bingemate/media-go-pkg/repository"
 	"github.com/bingemate/media-go-pkg/transcoder"
 	"github.com/bingemate/media-indexer/pkg"
@@ -112,7 +113,7 @@ func (r *MediaRepository) IndexTvEpisode(tvEpisode pkg.TVEpisode, fileSource, de
 	episodeEntity := repository.Episode{
 		ID:          tvEpisode.ID,
 		TvShow:      *tvShowEntity,
-		Name:        tvEpisode.Name,
+		Name:        fmt.Sprintf("%s %dx%02d", tvEpisode.Name, tvEpisode.Season, tvEpisode.Episode),
 		NbEpisode:   tvEpisode.Episode,
 		NbSeason:    tvEpisode.Season,
 		ReleaseDate: episodeReleaseDate,
