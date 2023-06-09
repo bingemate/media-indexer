@@ -187,9 +187,9 @@ func (r *MediaRepository) handleDuplicatedMovie(tmdbID int, destination string) 
 		return nil
 	}
 
-	if movie.MediaFileID != "" {
+	if movie.MediaFileID != nil {
 		log.Printf("Removing duplicated movie %s", movie.Name)
-		err := r.removeMediaFile(movie.MediaFileID)
+		err := r.removeMediaFile(*movie.MediaFileID)
 		if err != nil {
 			return err
 		}
@@ -209,9 +209,9 @@ func (r *MediaRepository) handleDuplicatedEpisode(tmdbID int, destination string
 		return nil
 	}
 
-	if tvEpisode.MediaFileID != "" {
+	if tvEpisode.MediaFileID != nil {
 		log.Printf("Removing duplicated tv episode %s %dx%d", tvEpisode.Name, tvEpisode.NbSeason, tvEpisode.NbEpisode)
-		err := r.removeMediaFile(tvEpisode.MediaFileID)
+		err := r.removeMediaFile(*tvEpisode.MediaFileID)
 		if err != nil {
 			return err
 		}
