@@ -275,6 +275,9 @@ func (r *MediaRepository) findMovie(tmdbID int) (*repository.Movie, error) {
 	var movie repository.Movie
 	db := r.db.Where("id = ?", tmdbID).First(&movie)
 	if db.Error != nil {
+		if errors.Is(db.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, db.Error
 	}
 	return &movie, nil
@@ -284,6 +287,9 @@ func (r *MediaRepository) findEpisode(tmdbID int) (*repository.Episode, error) {
 	var episode repository.Episode
 	db := r.db.Where("id = ?", tmdbID).First(&episode)
 	if db.Error != nil {
+		if errors.Is(db.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, db.Error
 	}
 	return &episode, nil
