@@ -7,9 +7,11 @@ import (
 	"github.com/bingemate/media-go-pkg/transcoder"
 	"github.com/bingemate/media-indexer/pkg"
 	"gorm.io/gorm"
+	"io/fs"
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"time"
 )
@@ -47,6 +49,8 @@ func (r *MediaRepository) IndexMovie(movie pkg.Movie, fileSource, destinationPat
 		return err
 	}
 
+	folderSize := getFolderSize(path.Join(destinationPath, strconv.Itoa(movie.ID)))
+
 	alreadyInDB, err := r.findMovie(movie.ID)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
@@ -56,7 +60,7 @@ func (r *MediaRepository) IndexMovie(movie pkg.Movie, fileSource, destinationPat
 		ID:          movie.ID,
 		Name:        movie.Name,
 		ReleaseDate: releaseDate,
-		MediaFile:   r.extractMediaFile(&mediaData, &response),
+		MediaFile:   r.extractMediaFile(&mediaData, folderSize, &response),
 	}
 
 	if alreadyInDB != nil {
@@ -105,6 +109,8 @@ func (r *MediaRepository) IndexTvEpisode(tvEpisode pkg.TVEpisode, fileSource, de
 		return err
 	}
 
+	folderSize := getFolderSize(path.Join(destinationPath, strconv.Itoa(tvEpisode.ID)))
+
 	alreadyInDB, err := r.findEpisode(tvEpisode.ID)
 	if err != nil {
 		return err
@@ -117,7 +123,7 @@ func (r *MediaRepository) IndexTvEpisode(tvEpisode pkg.TVEpisode, fileSource, de
 		NbEpisode:   tvEpisode.Episode,
 		NbSeason:    tvEpisode.Season,
 		ReleaseDate: episodeReleaseDate,
-		MediaFile:   r.extractMediaFile(&mediaData, &response),
+		MediaFile:   r.extractMediaFile(&mediaData, folderSize, &response),
 	}
 
 	if alreadyInDB != nil {
@@ -131,10 +137,11 @@ func (r *MediaRepository) IndexTvEpisode(tvEpisode pkg.TVEpisode, fileSource, de
 	return nil
 }
 
-func (r *MediaRepository) extractMediaFile(mediaData *pkg.MediaData, transcoderResponse *transcoder.TranscodeResponse) *repository.MediaFile {
+func (r *MediaRepository) extractMediaFile(mediaData *pkg.MediaData, size int64, transcoderResponse *transcoder.TranscodeResponse) *repository.MediaFile {
 	return &repository.MediaFile{
 		Filename:  transcoderResponse.VideoIndex,
 		Duration:  mediaData.Duration,
+		Size:      size,
 		Audios:    *r.extractAudio(&mediaData.Audios, transcoderResponse),
 		Subtitles: *r.extractSubtitles(&mediaData.Subtitles, transcoderResponse),
 	}
@@ -293,4 +300,26 @@ func (r *MediaRepository) findEpisode(tmdbID int) (*repository.Episode, error) {
 		return nil, db.Error
 	}
 	return &episode, nil
+}
+
+func getFolderSize(folderPath string) int64 {
+	var size int64
+	err := filepath.WalkDir(folderPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() {
+			info, err := d.Info()
+			if err != nil {
+				return err
+			}
+			size += info.Size()
+		}
+		return nil
+	})
+	if err != nil {
+		log.Println(err)
+		return 0
+	}
+	return size
 }
