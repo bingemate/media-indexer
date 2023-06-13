@@ -10,7 +10,7 @@ definitions:
       date:
         example: "2021-01-01 12:00:00"
         type: string
-      job_name:
+      jobName:
         example: upload movie
         type: string
       message:

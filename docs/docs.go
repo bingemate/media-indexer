@@ -282,7 +282,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2021-01-01 12:00:00"
                 },
-                "job_name": {
+                "jobName": {
                     "type": "string",
                     "example": "upload movie"
                 },

@@ -6,7 +6,7 @@ import (
 )
 
 type JobLog struct {
-	JobName string `json:"job_name" example:"upload movie"`
+	JobName string `json:"jobName" example:"upload movie"`
 	Date    string `json:"date" example:"2021-01-01 12:00:00"`
 	Message string `json:"message" example:"Uploading movie test.mp4"`
 }
