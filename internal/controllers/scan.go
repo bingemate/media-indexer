@@ -15,6 +15,9 @@ func InitScanController(engine *gin.RouterGroup, movieScanner *features.MovieSca
 	engine.POST("/tv", func(c *gin.Context) {
 		scanTvShow(c, tvScanner)
 	})
+	engine.GET("/pop-logs", func(c *gin.Context) {
+		popJobLogs(c)
+	})
 	engine.GET("/logs", func(c *gin.Context) {
 		getJobLogs(c)
 	})
@@ -64,9 +67,19 @@ func scanTvShow(c *gin.Context, tvScanner *features.TVScanner) {
 // @Tags			Scan
 // @Produce		json
 // @Success		200	{array} jobLogResponse
+// @Router			/scan/pop-logs [get]
+func popJobLogs(c *gin.Context) {
+	c.JSON(200, pkg.PopJobLogs())
+}
+
+// @Summary		Get Job Logs
+// @Description	Get the logs of the last / current job
+// @Tags			Scan
+// @Produce		json
+// @Success		200	{array} jobLogResponse
 // @Router			/scan/logs [get]
 func getJobLogs(c *gin.Context) {
-	c.JSON(200, pkg.PopJobLogs())
+	c.JSON(200, pkg.GetJobLogs())
 }
 
 // @Summary		Get Job Name
