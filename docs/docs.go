@@ -16,30 +16,27 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/ping": {
+        "/job/is-running": {
             "get": {
-                "description": "Ping",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Check if a job is currently running",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Ping"
+                    "Scan"
                 ],
-                "summary": "Ping",
+                "summary": "Is Running",
                 "responses": {
                     "200": {
-                        "description": "pong",
+                        "description": "OK",
                         "schema": {
-                            "type": "string"
+                            "type": "boolean"
                         }
                     }
                 }
             }
         },
-        "/scan/job-name": {
+        "/job/job-name": {
             "get": {
                 "description": "Get the name of the last / current job",
                 "produces": [
@@ -59,7 +56,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/scan/logs": {
+        "/job/logs": {
             "get": {
                 "description": "Get the logs of the last / current job",
                 "produces": [
@@ -77,6 +74,52 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/controllers.jobLogResponse"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/job/pop-logs": {
+            "get": {
+                "description": "Get the logs of the last / current job",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Scan"
+                ],
+                "summary": "Get Job Logs",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/controllers.jobLogResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/ping": {
+            "get": {
+                "description": "Ping",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Ping"
+                ],
+                "summary": "Ping",
+                "responses": {
+                    "200": {
+                        "description": "pong",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -103,29 +146,6 @@ const docTemplate = `{
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/controllers.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/scan/pop-logs": {
-            "get": {
-                "description": "Get the logs of the last / current job",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Scan"
-                ],
-                "summary": "Get Job Logs",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/controllers.jobLogResponse"
-                            }
                         }
                     }
                 }
@@ -260,7 +280,7 @@ const docTemplate = `{
             "properties": {
                 "date": {
                     "type": "string",
-                    "example": "2021-01-01"
+                    "example": "2021-01-01 12:00:00"
                 },
                 "job_name": {
                     "type": "string",

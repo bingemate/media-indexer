@@ -24,5 +24,6 @@ func InitRouter(engine *gin.Engine, db *gorm.DB, env initializers.Env) {
 	features.ScheduleScanner(env.ScanCron, movieScanner, tvScanner)
 	InitScanController(mediaIndexerGroup.Group("/scan"), movieScanner, tvScanner)
 	InitUploadController(mediaIndexerGroup.Group("/upload"), mediaUploader)
+	InitJobController(mediaIndexerGroup.Group("/job"))
 	InitPingController(mediaIndexerGroup.Group("/ping"))
 }
