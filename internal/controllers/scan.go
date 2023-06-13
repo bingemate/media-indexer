@@ -6,14 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type movieScanResponse struct {
-	Data []features.MovieScannerResult `json:"data"`
-}
-
-type tvScanResponse struct {
-	Data []features.TVScannerResult `json:"data"`
-}
-
 type jobLogResponse pkg.JobLog
 
 func InitScanController(engine *gin.RouterGroup, movieScanner *features.MovieScanner, tvScanner *features.TVScanner) {
