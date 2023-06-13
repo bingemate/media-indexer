@@ -108,6 +108,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/scan/pop-logs": {
+            "get": {
+                "description": "Get the logs of the last / current job",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Scan"
+                ],
+                "summary": "Get Job Logs",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/controllers.jobLogResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/scan/tv": {
             "post": {
                 "description": "Scan TV Shows from the configured folder",

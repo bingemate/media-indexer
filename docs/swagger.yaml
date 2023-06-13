@@ -91,6 +91,21 @@ paths:
       summary: Scan Movies
       tags:
       - Scan
+  /scan/pop-logs:
+    get:
+      description: Get the logs of the last / current job
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/controllers.jobLogResponse'
+            type: array
+      summary: Get Job Logs
+      tags:
+      - Scan
   /scan/tv:
     post:
       description: Scan TV Shows from the configured folder
