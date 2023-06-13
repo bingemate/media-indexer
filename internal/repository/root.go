@@ -29,6 +29,7 @@ func NewMediaRepository(db *gorm.DB) *MediaRepository {
 
 func (r *MediaRepository) IndexMovie(movie pkg.Movie, fileSource, destinationPath string) error {
 	log.Printf("Indexing movie %s", movie.Name)
+	pkg.AppendJobLog(fmt.Sprintf("Indexing movie %s", movie.Name))
 	releaseDate, err := time.Parse("2006-01-02", movie.ReleaseDate)
 	if err != nil {
 		return err
@@ -81,6 +82,7 @@ func (r *MediaRepository) IndexMovie(movie pkg.Movie, fileSource, destinationPat
 
 func (r *MediaRepository) IndexTvEpisode(tvEpisode pkg.TVEpisode, fileSource, destinationPath string) error {
 	log.Printf("Indexing tv show %s", tvEpisode.Name)
+	pkg.AppendJobLog(fmt.Sprintf("Indexing tv show %s", tvEpisode.Name))
 	releaseDate, err := time.Parse("2006-01-02", tvEpisode.TvReleaseDate)
 	if err != nil {
 		return err
@@ -196,11 +198,13 @@ func (r *MediaRepository) handleDuplicatedMovie(tmdbID int, destination string) 
 
 	if movie.MediaFileID != nil {
 		log.Printf("Removing duplicated movie %s", movie.Name)
+		pkg.AppendJobLog(fmt.Sprintf("Removing duplicated movie %s", movie.Name))
 		err := r.removeMediaFile(*movie.MediaFileID)
 		if err != nil {
 			return err
 		}
 		log.Printf("Removing duplicated file %s", movie.MediaFile.Filename)
+		pkg.AppendJobLog(fmt.Sprintf("Removing duplicated file %s", movie.MediaFile.Filename))
 		return os.RemoveAll(path.Join(destination, strconv.Itoa(tmdbID)))
 	}
 	return nil
@@ -218,11 +222,13 @@ func (r *MediaRepository) handleDuplicatedEpisode(tmdbID int, destination string
 
 	if tvEpisode.MediaFileID != nil {
 		log.Printf("Removing duplicated tv episode %s %dx%d", tvEpisode.Name, tvEpisode.NbSeason, tvEpisode.NbEpisode)
+		pkg.AppendJobLog(fmt.Sprintf("Removing duplicated tv episode %s %dx%d", tvEpisode.Name, tvEpisode.NbSeason, tvEpisode.NbEpisode))
 		err := r.removeMediaFile(*tvEpisode.MediaFileID)
 		if err != nil {
 			return err
 		}
 		log.Printf("Removing duplicated file %s", tvEpisode.MediaFile.Filename)
+		pkg.AppendJobLog(fmt.Sprintf("Removing duplicated file %s", tvEpisode.MediaFile.Filename))
 		return os.RemoveAll(path.Join(destination, strconv.Itoa(tmdbID)))
 	}
 	return nil
@@ -256,6 +262,7 @@ func (r *MediaRepository) handleTvShow(name string, tmdbID int, releaseDate time
 	db := r.db.Where(`id = ?`, tmdbID).First(&alreadyInDB)
 	if db.Error != nil && !errors.Is(db.Error, gorm.ErrRecordNotFound) {
 		log.Println(db.Error)
+		pkg.AppendJobLog(db.Error.Error())
 		return nil, db.Error
 	}
 	if alreadyInDB.ID != 0 {
@@ -319,6 +326,7 @@ func getFolderSize(folderPath string) int64 {
 	})
 	if err != nil {
 		log.Println(err)
+		pkg.AppendJobLog(err.Error())
 		return 0
 	}
 	return size

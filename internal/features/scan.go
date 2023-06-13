@@ -2,15 +2,12 @@ package features
 
 import (
 	"errors"
+	"fmt"
 	"github.com/bingemate/media-indexer/internal/repository"
 	"github.com/bingemate/media-indexer/pkg"
 	"log"
 	"path"
 	"sync"
-)
-
-var (
-	scannerMutex = &sync.Mutex{}
 )
 
 // MovieScanner represents a struct that scans movie folders to search for movie files and move them.
@@ -63,46 +60,47 @@ func NewTVScanner(source, destination string, mediaClient pkg.MediaClient, media
 
 // ScanMovies scans the source directory for movies and moves them to the destination directory.
 // It returns a slice of MovieScannerResult and an error if there is any.
-func (s *MovieScanner) ScanMovies() (*[]MovieScannerResult, error) {
+func (s *MovieScanner) ScanMovies() error {
 	// Locks the scanner to prevent concurrent scanning
-	locked := scannerMutex.TryLock()
+	locked := jobLock.TryLock()
 	if !locked {
-		return nil, errors.New("scanner is currently running")
-	}
-	defer scannerMutex.Unlock()
-
-	uploadLocked := uploadLock.TryLock()
-	if !uploadLocked {
-		return nil, errors.New("upload is currently running")
-	}
-	defer uploadLock.Unlock()
-	mediaFiles, err := s.scanMovieFolder()
-	if err != nil {
-		return nil, err
-	}
-	atomicMovieList := s.retrieveMovieList(mediaFiles)
-
-	result := s.buildMovieScannerResult(atomicMovieList)
-
-	//log.Printf("Moving %d movies to %s...", len(*result), s.destination)
-
-	// Moves the movies to the destination directory and returns an error if it fails
-	err = s.processMovies(atomicMovieList, s.destination)
-	if err != nil {
-		log.Printf("Failed to move movies to %s: %v", s.destination, err)
-		return nil, err
+		log.Printf("Job '%s' already running, skipping this run", pkg.GetJobName())
+		return fmt.Errorf("job '%s' already running, skipping this run", pkg.GetJobName())
 	}
 
-	log.Printf("Successfully moved %d movies to %s.", len(*result), s.destination)
+	go func() {
+		defer jobLock.Unlock()
+		pkg.ClearJobLogs("scan movies")
 
-	err = pkg.ClearFolderContent(s.source)
-	if err != nil {
-		log.Printf("Failed to clear source folder content: %v", err)
-		return nil, err
-	}
+		mediaFiles, err := s.scanMovieFolder()
+		if err != nil {
+			log.Printf("Failed to scan movie folder: %v", err)
+			pkg.AppendJobLog(fmt.Sprintf("Failed to scan movie folder: %v", err))
+			return
+		}
+		atomicMovieList := s.retrieveMovieList(mediaFiles)
 
-	// Returns the result slice and no error
-	return result, nil
+		result := s.buildMovieScannerResult(atomicMovieList)
+
+		// Process the movies to the destination directory and returns an error if it fails
+		err = s.processMovies(atomicMovieList, s.destination)
+		if err != nil {
+			log.Printf("Failed to process movies to %s: %v", s.destination, err)
+			pkg.AppendJobLog(fmt.Sprintf("Failed to process movies to %s: %v", s.destination, err))
+			return
+		}
+
+		log.Printf("Successfully processed %d movies to %s.", len(*result), s.destination)
+		pkg.AppendJobLog(fmt.Sprintf("Successfully processed %d movies to %s.", len(*result), s.destination))
+
+		err = pkg.ClearFolderContent(s.source)
+		if err != nil {
+			log.Printf("Failed to clear source folder content: %v", err)
+			pkg.AppendJobLog(fmt.Sprintf("Failed to clear source folder content: %v", err))
+			return
+		}
+	}()
+	return nil
 }
 
 func (s *MovieScanner) buildMovieScannerResult(atomicMediaList *pkg.AtomicMovieList) *[]MovieScannerResult {
@@ -122,15 +120,18 @@ func (s *MovieScanner) buildMovieScannerResult(atomicMediaList *pkg.AtomicMovieL
 func (s *MovieScanner) scanMovieFolder() (*[]pkg.MovieFile, error) {
 	// Logs that the function is scanning the source directory for movies
 	log.Printf("Scanning %s for movies...", s.source)
+	pkg.AppendJobLog(fmt.Sprintf("Scanning %s for movies...", s.source))
 
 	// Builds the directory tree from the source directory and returns an error if it fails
 	mediaFiles, err := pkg.BuildMovieTree(s.source)
 	if err != nil {
 		log.Printf("Failed to scan source tree: %v", err)
+		pkg.AppendJobLog(fmt.Sprintf("Failed to scan source tree: %v", err))
 		return nil, err
 	}
 
 	log.Printf("Scanning %d files in %s...", len(mediaFiles), s.source)
+	pkg.AppendJobLog(fmt.Sprintf("Scanning %d files in %s...", len(mediaFiles), s.source))
 	return &mediaFiles, nil
 }
 
@@ -146,11 +147,13 @@ func (s *MovieScanner) retrieveMovieList(mediaFiles *[]pkg.MovieFile) *pkg.Atomi
 			defer wg.Done()
 
 			log.Printf("Searching for movie information for file %s...", mediaFile.Filename)
+			pkg.AppendJobLog(fmt.Sprintf("Searching for movie information for file %s...", mediaFile.Filename))
 
 			// Searches for the movie information for the current media file and adds the result to the AtomicMovieList
 			media, ok := searchMovie(&mediaFile, s.mediaClient)
 			if !ok {
 				log.Printf("Failed to find movie information for file %s.", mediaFile.Filename)
+				pkg.AppendJobLog(fmt.Sprintf("Failed to find movie information for file %s.", mediaFile.Filename))
 				return
 			}
 			atomicMovieList.LinkMediaFile(mediaFile, media)
@@ -161,52 +164,55 @@ func (s *MovieScanner) retrieveMovieList(mediaFiles *[]pkg.MovieFile) *pkg.Atomi
 	wg.Wait()
 
 	log.Println("Movie scan complete.")
+	pkg.AppendJobLog("Movie scan complete.")
 	return atomicMovieList
 }
 
 // ScanTV scans the source directory for TV shows and moves them to the destination directory.
 // It returns a slice of TVScannerResult and an error if there is any.
-func (s *TVScanner) ScanTV() (*[]TVScannerResult, error) {
+func (s *TVScanner) ScanTV() error {
 	// Locks the scanner to prevent concurrent scanning
-	locked := scannerMutex.TryLock()
+	locked := jobLock.TryLock()
 	if !locked {
-		return nil, errors.New("scanner is currently running")
+		log.Printf("Job '%s' already running, skipping this run", pkg.GetJobName())
+		return fmt.Errorf("job '%s' already running, skipping this run", pkg.GetJobName())
 	}
-	defer scannerMutex.Unlock()
+	pkg.ClearJobLogs("scan tv")
 
-	uploadLocked := uploadLock.TryLock()
-	if !uploadLocked {
-		return nil, errors.New("upload is currently running")
-	}
-	defer uploadLock.Unlock()
-	mediaFiles, err := s.scanTVFolder()
-	if err != nil {
-		return nil, err
-	}
+	go func() {
 
-	atomicMediaList := s.retrieveTvList(mediaFiles)
+		defer jobLock.Unlock()
 
-	result := s.buildTVScannerResult(atomicMediaList)
+		mediaFiles, err := s.scanTVFolder()
+		if err != nil {
+			log.Printf("Failed to scan TV folder: %v", err)
+			pkg.AppendJobLog(fmt.Sprintf("Failed to scan TV folder: %v", err))
+			return
+		}
 
-	//log.Printf("Moving %d TV shows to %s...", len(*result), s.destination)
+		atomicMediaList := s.retrieveTvList(mediaFiles)
 
-	// Moves the TV shows to the destination directory and returns an error if it fails
-	err = s.processTVEpisodes(atomicMediaList, s.destination)
-	if err != nil {
-		log.Printf("Failed to move TV shows to %s: %v", s.destination, err)
-		return nil, err
-	}
+		result := s.buildTVScannerResult(atomicMediaList)
 
-	log.Printf("Successfully moved %d TV shows to %s.", len(*result), s.destination)
+		// Moves the TV shows to the destination directory and returns an error if it fails
+		err = s.processTVEpisodes(atomicMediaList, s.destination)
+		if err != nil {
+			log.Printf("Failed to process TV shows to %s: %v", s.destination, err)
+			pkg.AppendJobLog(fmt.Sprintf("Failed to process TV shows to %s: %v", s.destination, err))
+			return
+		}
 
-	err = pkg.ClearFolderContent(s.source)
-	if err != nil {
-		log.Printf("Failed to clear source folder content: %v", err)
-		return nil, err
-	}
+		log.Printf("Successfully processed %d TV shows to %s.", len(*result), s.destination)
+		pkg.AppendJobLog(fmt.Sprintf("Successfully processed %d TV shows to %s.", len(*result), s.destination))
 
-	// Returns the result slice and no error
-	return result, nil
+		err = pkg.ClearFolderContent(s.source)
+		if err != nil {
+			log.Printf("Failed to clear source folder content: %v", err)
+			pkg.AppendJobLog(fmt.Sprintf("Failed to clear source folder content: %v", err))
+			return
+		}
+	}()
+	return nil
 }
 
 func (s *TVScanner) buildTVScannerResult(atomicMediaList *pkg.AtomicTVEpisodeList) *[]TVScannerResult {
@@ -236,15 +242,19 @@ func (s *TVScanner) retrieveTvList(mediaFiles *[]pkg.TVShowFile) *pkg.AtomicTVEp
 
 			// Logs that the function is searching for TV show information for the current file
 			log.Printf("Searching for TV show information for file %s...", mediaFile.Filename)
+			pkg.AppendJobLog(fmt.Sprintf("Searching for TV show information for file %s...", mediaFile.Filename))
 
 			// Searches for the TV show information for the current media file and adds the result to the AtomicMovieList
 			media, ok := searchTVEpisode(&mediaFile, s.mediaClient)
 			if !ok {
 				log.Printf("Failed to find TV show information for file %s.", mediaFile.Filename)
+				pkg.AppendJobLog(fmt.Sprintf("Failed to find TV show information for file %s.", mediaFile.Filename))
 				return
 			}
 			log.Printf("Found TV show information for file %s:", mediaFile.Filename)
+			pkg.AppendJobLog(fmt.Sprintf("Found TV show information for file %s:", mediaFile.Filename))
 			log.Println(media)
+			pkg.AppendJobLog(fmt.Sprintf("%v", media))
 			atomicMediaList.LinkMediaFile(mediaFile, media)
 		}(mediaFile)
 	}
@@ -254,21 +264,25 @@ func (s *TVScanner) retrieveTvList(mediaFiles *[]pkg.TVShowFile) *pkg.AtomicTVEp
 
 	// Logs that the TV show scan is complete
 	log.Println("TV show scan complete.")
+	pkg.AppendJobLog("TV show scan complete.")
 	return atomicMediaList
 }
 
 func (s *TVScanner) scanTVFolder() (*[]pkg.TVShowFile, error) {
 	// Logs that the function is scanning the source directory for TV shows
 	log.Printf("Scanning %s for TV shows...", s.source)
+	pkg.AppendJobLog(fmt.Sprintf("Scanning %s for TV shows...", s.source))
 
 	// Builds the directory tree from the source directory and returns an error if it fails
 	mediaFiles, err := pkg.BuildTVShowTree(s.source)
 	if err != nil {
 		log.Printf("Failed to scan source tree: %v", err)
+		pkg.AppendJobLog(fmt.Sprintf("Failed to scan source tree: %v", err))
 		return nil, err
 	}
 
 	log.Printf("Scanning %d files in %s...", len(mediaFiles), s.source)
+	pkg.AppendJobLog(fmt.Sprintf("Scanning %d files in %s...", len(mediaFiles), s.source))
 	return &mediaFiles, nil
 }
 
@@ -277,6 +291,7 @@ func searchMovie(mediaFile *pkg.MovieFile, client pkg.MediaClient) (pkg.Movie, b
 	result, err := client.SearchMovie(mediaFile.SanitizedName, mediaFile.Year)
 	if err != nil {
 		log.Printf("Error while media search on %s : %s. Sanitized name was : %s", mediaFile.Filename, err.Error(), mediaFile.SanitizedName)
+		pkg.AppendJobLog(fmt.Sprintf("Error while media search on %s : %s. Sanitized name was : %s", mediaFile.Filename, err.Error(), mediaFile.SanitizedName))
 		return pkg.Movie{}, false
 	}
 	return result, true
@@ -287,6 +302,7 @@ func searchTVEpisode(mediaFile *pkg.TVShowFile, client pkg.MediaClient) (pkg.TVE
 	result, err := client.SearchTVShow(mediaFile.SanitizedName, mediaFile.Season, mediaFile.Episode)
 	if err != nil {
 		log.Printf("Error while media search on %s : %s. Sanitized name was : %s", mediaFile.Filename, err.Error(), mediaFile.SanitizedName)
+		pkg.AppendJobLog(fmt.Sprintf("Error while media search on %s : %s. Sanitized name was : %s", mediaFile.Filename, err.Error(), mediaFile.SanitizedName))
 		return pkg.TVEpisode{}, false
 	}
 	return result, true
@@ -296,15 +312,18 @@ func searchTVEpisode(mediaFile *pkg.TVShowFile, client pkg.MediaClient) (pkg.TVE
 // It returns an error if the destination directory does not exist or if there was an error while moving the file.
 func (s *MovieScanner) processMovies(movieList *pkg.AtomicMovieList, destination string) error {
 	if !pkg.IsDirectoryExists(destination) {
+		pkg.AppendJobLog(fmt.Sprintf("Destination directory %s does not exists", destination))
 		return errors.New("destination directory does not exists")
 	}
 	for mediaFile, media := range movieList.GetAll() {
 		var source = path.Join(mediaFile.Path, mediaFile.Filename)
 		err := s.mediaRepository.IndexMovie(media, source, s.destination)
 		if err != nil {
+			pkg.AppendJobLog(fmt.Sprintf("Failed to index %s to %s : %s", source, s.destination, err.Error()))
 			return err
 		}
 		log.Printf("Processed %-60s - %s %s", mediaFile.Filename, media.Name, media.Year())
+		pkg.AppendJobLog(fmt.Sprintf("Processed %-60s - %s %s", mediaFile.Filename, media.Name, media.Year()))
 	}
 	return nil
 }
@@ -313,6 +332,7 @@ func (s *MovieScanner) processMovies(movieList *pkg.AtomicMovieList, destination
 // It returns an error if the destination directory does not exist or if there was an error while moving the file.
 func (s *TVScanner) processTVEpisodes(tvList *pkg.AtomicTVEpisodeList, destination string) error {
 	if !pkg.IsDirectoryExists(destination) {
+		pkg.AppendJobLog(fmt.Sprintf("Destination directory %s does not exists", destination))
 		return errors.New("destination directory does not exists")
 	}
 
@@ -320,9 +340,11 @@ func (s *TVScanner) processTVEpisodes(tvList *pkg.AtomicTVEpisodeList, destinati
 		var source = path.Join(mediaFile.Path, mediaFile.Filename)
 		err := s.mediaRepository.IndexTvEpisode(media, source, s.destination)
 		if err != nil {
+			pkg.AppendJobLog(fmt.Sprintf("Failed to index %s to %s : %s", source, s.destination, err.Error()))
 			return err
 		}
 		log.Printf("Processed %-60s - %s %s", mediaFile.Filename, media.Name, media.Year())
+		pkg.AppendJobLog(fmt.Sprintf("Processed %-60s - %s %s", mediaFile.Filename, media.Name, media.Year()))
 	}
 	return nil
 }

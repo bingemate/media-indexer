@@ -5,19 +5,17 @@ definitions:
       error:
         type: string
     type: object
-  controllers.movieScanResponse:
+  controllers.jobLogResponse:
     properties:
-      data:
-        items:
-          $ref: '#/definitions/features.MovieScannerResult'
-        type: array
-    type: object
-  controllers.tvScanResponse:
-    properties:
-      data:
-        items:
-          $ref: '#/definitions/features.TVScannerResult'
-        type: array
+      date:
+        example: "2021-01-01"
+        type: string
+      job_name:
+        example: upload movie
+        type: string
+      message:
+        example: Uploading movie test.mp4
+        type: string
     type: object
   controllers.uploadResponse:
     properties:
@@ -25,67 +23,6 @@ definitions:
         type: integer
       message:
         type: string
-    type: object
-  features.MovieScannerResult:
-    properties:
-      movie:
-        allOf:
-        - $ref: '#/definitions/pkg.Movie'
-        description: Movie details returned by TMDB.
-      source:
-        description: Source filename.
-        type: string
-    type: object
-  features.TVScannerResult:
-    properties:
-      source:
-        description: Source filename.
-        type: string
-      tvepisode:
-        allOf:
-        - $ref: '#/definitions/pkg.TVEpisode'
-        description: TV episode details returned by TMDB.
-    type: object
-  pkg.Category:
-    properties:
-      id:
-        type: integer
-      name:
-        type: string
-    type: object
-  pkg.Movie:
-    properties:
-      categories:
-        items:
-          $ref: '#/definitions/pkg.Category'
-        type: array
-      id:
-        type: integer
-      name:
-        type: string
-      releaseDate:
-        type: string
-    type: object
-  pkg.TVEpisode:
-    properties:
-      categories:
-        items:
-          $ref: '#/definitions/pkg.Category'
-        type: array
-      episode:
-        type: integer
-      id:
-        type: integer
-      name:
-        type: string
-      releaseDate:
-        type: string
-      season:
-        type: integer
-      tvReleaseDate:
-        type: string
-      tvShowID:
-        type: integer
     type: object
 host: localhost:8080
 info:
@@ -109,6 +46,34 @@ paths:
       summary: Ping
       tags:
       - Ping
+  /scan/job-name:
+    get:
+      description: Get the name of the last / current job
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Get Job Name
+      tags:
+      - Scan
+  /scan/logs:
+    get:
+      description: Get the logs of the last / current job
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/controllers.jobLogResponse'
+            type: array
+      summary: Get Job Logs
+      tags:
+      - Scan
   /scan/movie:
     post:
       description: Scan movies from the configured folder
@@ -116,14 +81,29 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Scan started
           schema:
-            $ref: '#/definitions/controllers.movieScanResponse'
+            type: string
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/controllers.errorResponse'
       summary: Scan Movies
+      tags:
+      - Scan
+  /scan/pop-logs:
+    get:
+      description: Get the logs of the last / current job
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/controllers.jobLogResponse'
+            type: array
+      summary: Get Job Logs
       tags:
       - Scan
   /scan/tv:
@@ -133,9 +113,9 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Scan started
           schema:
-            $ref: '#/definitions/controllers.tvScanResponse'
+            type: string
         "500":
           description: Internal Server Error
           schema:

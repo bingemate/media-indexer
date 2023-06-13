@@ -1,15 +1,13 @@
 package features
 
 import (
-	"errors"
+	"fmt"
+	"github.com/bingemate/media-indexer/pkg"
 	"github.com/gin-gonic/gin"
 	"log"
 	"mime/multipart"
 	"path"
-	"sync"
 )
-
-var uploadLock = sync.Mutex{}
 
 type MediaUploader struct {
 	tvSourceFolder    string
@@ -24,13 +22,16 @@ func NewMediaUploader(tvSourceFolder, movieSourceFolder string) *MediaUploader {
 }
 
 func (m *MediaUploader) UploadMovie(context *gin.Context, file *multipart.FileHeader) error {
-	locked := uploadLock.TryLock()
+	locked := jobLock.TryLock()
 	if !locked {
-		log.Println("Upload or scan is already in progress")
-		return errors.New("upload or scan is already in progress")
+		log.Printf("Job '%s' already running, skipping this run", pkg.GetJobName())
+		return fmt.Errorf("job '%s' already running, skipping this run", pkg.GetJobName())
 	}
-	defer uploadLock.Unlock()
+	defer jobLock.Unlock()
+	pkg.ClearJobLogs("upload movie")
+	pkg.AppendJobLog("Starting upload movie job")
 	log.Println("Uploading movie", file.Filename)
+	pkg.AppendJobLog(fmt.Sprintf("Uploading movie %s", file.Filename))
 	return context.SaveUploadedFile(
 		file,
 		path.Join(m.movieSourceFolder, file.Filename),
@@ -38,13 +39,16 @@ func (m *MediaUploader) UploadMovie(context *gin.Context, file *multipart.FileHe
 }
 
 func (m *MediaUploader) UploadTV(context *gin.Context, file *multipart.FileHeader) error {
-	locked := uploadLock.TryLock()
+	locked := jobLock.TryLock()
 	if !locked {
-		log.Println("Upload or scan is already in progress")
-		return errors.New("upload or scan is already in progress")
+		log.Printf("Job '%s' already running, skipping this run", pkg.GetJobName())
+		return fmt.Errorf("job '%s' already running, skipping this run", pkg.GetJobName())
 	}
-	defer uploadLock.Unlock()
+	defer jobLock.Unlock()
+	pkg.ClearJobLogs("upload tv")
+	pkg.AppendJobLog("Starting upload tv job")
 	log.Println("Uploading TV", file.Filename)
+	pkg.AppendJobLog(fmt.Sprintf("Uploading TV %s", file.Filename))
 	return context.SaveUploadedFile(
 		file,
 		path.Join(m.tvSourceFolder, file.Filename),
