@@ -39,6 +39,49 @@ const docTemplate = `{
                 }
             }
         },
+        "/scan/job-name": {
+            "get": {
+                "description": "Get the name of the last / current job",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Scan"
+                ],
+                "summary": "Get Job Name",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/scan/logs": {
+            "get": {
+                "description": "Get the logs of the last / current job",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Scan"
+                ],
+                "summary": "Get Job Logs",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/controllers.jobLogResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/scan/movie": {
             "post": {
                 "description": "Scan movies from the configured folder",
@@ -51,9 +94,9 @@ const docTemplate = `{
                 "summary": "Scan Movies",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Scan started",
                         "schema": {
-                            "$ref": "#/definitions/controllers.movieScanResponse"
+                            "type": "string"
                         }
                     },
                     "500": {
@@ -77,9 +120,9 @@ const docTemplate = `{
                 "summary": "Scan TV Shows",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Scan started",
                         "schema": {
-                            "$ref": "#/definitions/controllers.tvScanResponse"
+                            "type": "string"
                         }
                     },
                     "500": {
@@ -189,25 +232,20 @@ const docTemplate = `{
                 }
             }
         },
-        "controllers.movieScanResponse": {
+        "controllers.jobLogResponse": {
             "type": "object",
             "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/features.MovieScannerResult"
-                    }
-                }
-            }
-        },
-        "controllers.tvScanResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/features.TVScannerResult"
-                    }
+                "date": {
+                    "type": "string",
+                    "example": "2021-01-01"
+                },
+                "job_name": {
+                    "type": "string",
+                    "example": "upload movie"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Uploading movie test.mp4"
                 }
             }
         },
@@ -219,103 +257,6 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string"
-                }
-            }
-        },
-        "features.MovieScannerResult": {
-            "type": "object",
-            "properties": {
-                "movie": {
-                    "description": "Movie details returned by TMDB.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/pkg.Movie"
-                        }
-                    ]
-                },
-                "source": {
-                    "description": "Source filename.",
-                    "type": "string"
-                }
-            }
-        },
-        "features.TVScannerResult": {
-            "type": "object",
-            "properties": {
-                "source": {
-                    "description": "Source filename.",
-                    "type": "string"
-                },
-                "tvepisode": {
-                    "description": "TV episode details returned by TMDB.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/pkg.TVEpisode"
-                        }
-                    ]
-                }
-            }
-        },
-        "pkg.Category": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "pkg.Movie": {
-            "type": "object",
-            "properties": {
-                "categories": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/pkg.Category"
-                    }
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "releaseDate": {
-                    "type": "string"
-                }
-            }
-        },
-        "pkg.TVEpisode": {
-            "type": "object",
-            "properties": {
-                "categories": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/pkg.Category"
-                    }
-                },
-                "episode": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "releaseDate": {
-                    "type": "string"
-                },
-                "season": {
-                    "type": "integer"
-                },
-                "tvReleaseDate": {
-                    "type": "string"
-                },
-                "tvShowID": {
-                    "type": "integer"
                 }
             }
         }
