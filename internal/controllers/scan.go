@@ -5,14 +5,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type movieScanResponse struct {
-	Data []features.MovieScannerResult `json:"data"`
-}
-
-type tvScanResponse struct {
-	Data []features.TVScannerResult `json:"data"`
-}
-
 func InitScanController(engine *gin.RouterGroup, movieScanner *features.MovieScanner, tvScanner *features.TVScanner) {
 	engine.POST("/movie", func(c *gin.Context) {
 		scanMovie(c, movieScanner)
@@ -26,38 +18,34 @@ func InitScanController(engine *gin.RouterGroup, movieScanner *features.MovieSca
 // @Description	Scan movies from the configured folder
 // @Tags			Scan
 // @Produce		json
-// @Success		200	{object} movieScanResponse
+// @Success		200	{string} string "Scan started"
 // @Failure		500	{object} errorResponse
 // @Router			/scan/movie [post]
 func scanMovie(c *gin.Context, movieScanner *features.MovieScanner) {
-	var result, err = movieScanner.ScanMovies()
+	var err = movieScanner.ScanMovies()
 	if err != nil {
 		c.JSON(500, errorResponse{
 			Error: err.Error(),
 		})
 		return
 	}
-	c.JSON(200, movieScanResponse{
-		Data: *result,
-	})
+	c.JSON(200, "Scan started")
 }
 
 // @Summary		Scan TV Shows
 // @Description	Scan TV Shows from the configured folder
 // @Tags			Scan
 // @Produce		json
-// @Success		200	{object} tvScanResponse
+// @Success		200	{string} string "Scan started"
 // @Failure		500	{object} errorResponse
 // @Router			/scan/tv [post]
 func scanTvShow(c *gin.Context, tvScanner *features.TVScanner) {
-	var result, err = tvScanner.ScanTV()
+	var err = tvScanner.ScanTV()
 	if err != nil {
 		c.JSON(500, errorResponse{
 			Error: err.Error(),
 		})
 		return
 	}
-	c.JSON(200, tvScanResponse{
-		Data: *result,
-	})
+	c.JSON(200, "Scan started")
 }
