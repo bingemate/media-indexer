@@ -14,12 +14,14 @@ RUN apk --no-cache add ca-certificates ffmpeg
 
 WORKDIR /app/
 COPY --from=build /app/main .
+COPY assets/ /app/assets/
 
 # Define your environment variables here
 ENV GOMEMLIMIT=200MiB \
     TZ=Europe/Paris \
     PORT=8080 \
     LOG_FILE=/app/logs/golang-app.log \
+    INTRO_FILE_PATH=/app/assets/intro.mkv \
     MOVIE_SOURCE_FOLDER=/app/movies-source \
     MOVIE_TARGET_FOLDER=/app/media-target/movies \
     TV_SOURCE_FOLDER=/app/tvshows-source \
