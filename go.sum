@@ -10,8 +10,8 @@ github.com/asticode/go-astisub v0.24.0 h1:Y3eDWeDyt+QlydjLrBuK91RZBkUenFH3EhUWoH
 github.com/asticode/go-astisub v0.24.0/go.mod h1:WTkuSzFB+Bp7wezuSf2Oxulj5A8zu2zLRVFf6bIFQK8=
 github.com/asticode/go-astits v1.8.0 h1:rf6aiiGn/QhlFjNON1n5plqF3Fs025XLUwiQ0NB6oZg=
 github.com/asticode/go-astits v1.8.0/go.mod h1:DkOWmBNQpnr9mv24KfZjq4JawCFX1FCqjLVGvO0DygQ=
-github.com/bingemate/media-go-pkg v1.2.4 h1:H42H6unNcNSCC6lUoF28sSp93X68QQwLefo9ogLLoKk=
-github.com/bingemate/media-go-pkg v1.2.4/go.mod h1:+l6BTzMfIdUipGFSs22pyeVT53M1lwlIepZhSXh2NO4=
+github.com/bingemate/media-go-pkg v1.2.5 h1:IXgWFmk5Wfr9iM+k0weWMeLiCxO9sSu15sxfn5geAV0=
+github.com/bingemate/media-go-pkg v1.2.5/go.mod h1:+l6BTzMfIdUipGFSs22pyeVT53M1lwlIepZhSXh2NO4=
 github.com/bytedance/sonic v1.5.0/go.mod h1:ED5hyg4y6t3/9Ku1R6dU/4KyJ48DZ4jPhfY1O2AihPM=
 github.com/bytedance/sonic v1.9.1 h1:6iJ6NqdoxCDr6mbY8h18oSO+cShGSMRGCEo7F2h0x8s=
 github.com/bytedance/sonic v1.9.1/go.mod h1:i736AoUSYt75HyZLoJW9ERYxcy6eaN6h4BZXU064P/U=
