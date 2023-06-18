@@ -152,10 +152,10 @@ func (r *MediaRepository) extractMediaFile(mediaData *pkg.MediaData, size int64,
 
 func (r *MediaRepository) extractSubtitles(pkgSubtitles *[]pkg.SubtitleData, transcoderResponse *transcoder.TranscodeResponse) *[]repository.Subtitle {
 	var subtitles = make([]repository.Subtitle, len(*pkgSubtitles))
-	for i, s := range *pkgSubtitles {
+	for i, s := range transcoderResponse.Subtitles {
 		subtitles[i] = repository.Subtitle{
-			Filename: transcoderResponse.Subtitles[i].SubtitleIndex,
-			Language: s.Language,
+			Filename: s.SubtitleIndex,
+			Language: (*pkgSubtitles)[i].Language,
 		}
 	}
 	return &subtitles
