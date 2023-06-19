@@ -6,8 +6,10 @@ import (
 	"github.com/bingemate/media-indexer/internal/repository"
 	"github.com/bingemate/media-indexer/pkg"
 	"log"
+	"os"
 	"path"
 	"sync"
+	"time"
 )
 
 // MovieScanner represents a struct that scans movie folders to search for movie files and move them.
@@ -93,12 +95,12 @@ func (s *MovieScanner) ScanMovies() error {
 		log.Printf("Successfully processed %d movies to %s.", len(*result), s.destination)
 		pkg.AppendJobLog(fmt.Sprintf("Successfully processed %d movies to %s.", len(*result), s.destination))
 
-		err = pkg.ClearFolderContent(s.source)
+		/*err = pkg.ClearFolderContent(s.source)
 		if err != nil {
 			log.Printf("Failed to clear source folder content: %v", err)
 			pkg.AppendJobLog(fmt.Sprintf("Failed to clear source folder content: %v", err))
 			return
-		}
+		}*/
 	}()
 	return nil
 }
@@ -205,12 +207,12 @@ func (s *TVScanner) ScanTV() error {
 		log.Printf("Successfully processed %d TV shows to %s.", len(*result), s.destination)
 		pkg.AppendJobLog(fmt.Sprintf("Successfully processed %d TV shows to %s.", len(*result), s.destination))
 
-		err = pkg.ClearFolderContent(s.source)
+		/*err = pkg.ClearFolderContent(s.source)
 		if err != nil {
 			log.Printf("Failed to clear source folder content: %v", err)
 			pkg.AppendJobLog(fmt.Sprintf("Failed to clear source folder content: %v", err))
 			return
-		}
+		}*/
 	}()
 	return nil
 }
@@ -315,15 +317,26 @@ func (s *MovieScanner) processMovies(movieList *pkg.AtomicMovieList, destination
 		pkg.AppendJobLog(fmt.Sprintf("Destination directory %s does not exists", destination))
 		return errors.New("destination directory does not exists")
 	}
+	var now time.Time
 	for mediaFile, media := range movieList.GetAll() {
+		now = time.Now()
 		var source = path.Join(mediaFile.Path, mediaFile.Filename)
 		err := s.mediaRepository.IndexMovie(media, source, s.destination)
 		if err != nil {
+			log.Printf("Failed to index %s to %s : %s", source, s.destination, err.Error())
 			pkg.AppendJobLog(fmt.Sprintf("Failed to index %s to %s : %s", source, s.destination, err.Error()))
 			return err
 		}
-		log.Printf("Processed %-60s - %s %s", mediaFile.Filename, media.Name, media.Year())
-		pkg.AppendJobLog(fmt.Sprintf("Processed %-60s - %s %s", mediaFile.Filename, media.Name, media.Year()))
+		log.Printf("Processed %s - %s %s. Took %v", mediaFile.Filename, media.Name, media.Year(), time.Since(now))
+		pkg.AppendJobLog(fmt.Sprintf("Processed %-60s - %s %s. Took %v", mediaFile.Filename, media.Name, media.Year(), time.Since(now)))
+
+		log.Printf("Removing %s", source)
+		pkg.AppendJobLog(fmt.Sprintf("Removing %s", source))
+		err = os.Remove(source)
+		if err != nil {
+			log.Printf("Failed to remove %s : %s", source, err.Error())
+			pkg.AppendJobLog(fmt.Sprintf("Failed to remove %s : %s", source, err.Error()))
+		}
 	}
 	return nil
 }
@@ -335,16 +348,26 @@ func (s *TVScanner) processTVEpisodes(tvList *pkg.AtomicTVEpisodeList, destinati
 		pkg.AppendJobLog(fmt.Sprintf("Destination directory %s does not exists", destination))
 		return errors.New("destination directory does not exists")
 	}
-
+	var now time.Time
 	for mediaFile, media := range tvList.GetAll() {
+		now = time.Now()
 		var source = path.Join(mediaFile.Path, mediaFile.Filename)
 		err := s.mediaRepository.IndexTvEpisode(media, source, s.destination)
 		if err != nil {
+			log.Printf("Failed to index %s to %s : %s", source, s.destination, err.Error())
 			pkg.AppendJobLog(fmt.Sprintf("Failed to index %s to %s : %s", source, s.destination, err.Error()))
 			return err
 		}
-		log.Printf("Processed %-60s - %s %s", mediaFile.Filename, media.Name, media.Year())
-		pkg.AppendJobLog(fmt.Sprintf("Processed %-60s - %s %s", mediaFile.Filename, media.Name, media.Year()))
+		log.Printf("Processed %s - %s %s. Took %v", mediaFile.Filename, media.Name, media.Year(), time.Since(now))
+		pkg.AppendJobLog(fmt.Sprintf("Processed %-60s - %s %s. Took %v", mediaFile.Filename, media.Name, media.Year(), time.Since(now)))
+
+		log.Printf("Removing %s", source)
+		pkg.AppendJobLog(fmt.Sprintf("Removing %s", source))
+		err = os.Remove(source)
+		if err != nil {
+			log.Printf("Failed to remove %s : %s", source, err.Error())
+			pkg.AppendJobLog(fmt.Sprintf("Failed to remove %s : %s", source, err.Error()))
+		}
 	}
 	return nil
 }
