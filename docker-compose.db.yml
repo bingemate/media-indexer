@@ -12,6 +12,16 @@ services:
       POSTGRESQL_DATABASE: 'postgres'
     ports:
       - "5432:5432"
+  redis:
+    container_name: redis
+    image: bitnami/redis:7.0
+    ports:
+      - "6379:6379"
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - redis-data:/bitnami/redis/data
 
 volumes:
   db-data:
+  redis-data:
