@@ -82,8 +82,8 @@ func (r *MediaRepository) IndexMovie(movie pkg.Movie, fileSource, destinationPat
 }
 
 func (r *MediaRepository) IndexTvEpisode(tvEpisode pkg.TVEpisode, fileSource, destinationPath string) error {
-	log.Printf("Indexing tv show %s", tvEpisode.Name)
-	pkg.AppendJobLog(fmt.Sprintf("Indexing tv show %s", tvEpisode.Name))
+	log.Printf("Indexing tv show %s - S%02dE%02d", tvEpisode.TvShowName, tvEpisode.Season, tvEpisode.Episode)
+	pkg.AppendJobLog(fmt.Sprintf("Indexing tv show %s - S%02dE%02d", tvEpisode.TvShowName, tvEpisode.Season, tvEpisode.Episode))
 	releaseDate, err := time.Parse("2006-01-02", tvEpisode.TvReleaseDate)
 	if err != nil {
 		return err
@@ -96,7 +96,7 @@ func (r *MediaRepository) IndexTvEpisode(tvEpisode pkg.TVEpisode, fileSource, de
 	if err != nil {
 		return err
 	}
-	tvShowEntity, err := r.handleTvShow(tvEpisode.Name, tvEpisode.TvShowID, releaseDate, &tvEpisode.Categories)
+	tvShowEntity, err := r.handleTvShow(tvEpisode.TvShowName, tvEpisode.TvShowID, releaseDate, &tvEpisode.Categories)
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func (r *MediaRepository) IndexTvEpisode(tvEpisode pkg.TVEpisode, fileSource, de
 	episodeEntity := repository.Episode{
 		ID:          tvEpisode.ID,
 		TvShow:      *tvShowEntity,
-		Name:        fmt.Sprintf("%s %dx%02d", tvEpisode.Name, tvEpisode.Season, tvEpisode.Episode),
+		Name:        tvEpisode.EpisodeName,
 		NbEpisode:   tvEpisode.Episode,
 		NbSeason:    tvEpisode.Season,
 		ReleaseDate: episodeReleaseDate,
