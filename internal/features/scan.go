@@ -358,8 +358,8 @@ func (s *TVScanner) processTVEpisodes(tvList *pkg.AtomicTVEpisodeList, destinati
 			pkg.AppendJobLog(fmt.Sprintf("Failed to index %s to %s : %s", source, s.destination, err.Error()))
 			return err
 		}
-		log.Printf("Processed %s - %s %s. Took %v", mediaFile.Filename, media.Name, media.Year(), time.Since(now))
-		pkg.AppendJobLog(fmt.Sprintf("Processed %-60s - %s %s. Took %v", mediaFile.Filename, media.Name, media.Year(), time.Since(now)))
+		log.Printf("Processed %-60s - %s - %s s%02de%02d\nTook %s", mediaFile.Filename, media.TvShowName, media.Year(), mediaFile.Season, mediaFile.Episode, time.Since(now))
+		pkg.AppendJobLog(fmt.Sprintf("Processed %-60s - %s - %s s%02de%02d\nTook %s", mediaFile.Filename, media.TvShowName, media.Year(), mediaFile.Season, mediaFile.Episode, time.Since(now)))
 
 		log.Printf("Removing %s", source)
 		pkg.AppendJobLog(fmt.Sprintf("Removing %s", source))
