@@ -52,7 +52,7 @@ func main(env initializers.Env) {
 		log.Fatal(err)
 	}
 	var mediaRepository = repository.NewMediaRepository(db, env.IntroFilePath)
-	var movieScanner = features.NewMovieScanner(env.MovieSourceFolder, env.MovieTargetFolder, mediaClient, mediaRepository)
+	var movieScanner = features.NewMovieScanner(env.MovieSourceFolder, env.MovieTargetFolder, mediaClient, mediaRepository, nil)
 	err = movieScanner.ScanMovies()
 	if err != nil {
 		log.Fatal(err)

@@ -35,6 +35,10 @@ ENV GOMEMLIMIT=200MiB \
     DB_NAME=bingemate \
     REDIS_HOST="localhost:6379" \
     REDIS_PASSWORD="" \
+    S3_ENDPOINT="http://localhost:9000" \
+    S3_ACCESS_KEY_ID=xxxxxxxxxxxxxxxxxxxx \
+    S3_SECRET_ACCESS_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx \
+    S3_BUCKET_NAME=media \
     SCAN_CRON="*/15 * * * *"
 
 # Expose the port on which the application will listen
