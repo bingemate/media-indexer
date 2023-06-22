@@ -3,6 +3,7 @@ module github.com/bingemate/media-indexer
 go 1.20
 
 require (
+	github.com/aws/aws-sdk-go v1.44.287
 	github.com/bingemate/media-go-pkg v1.4.3
 	github.com/caarlos0/env/v8 v8.0.0
 	github.com/gabriel-vasile/mimetype v1.4.2
@@ -39,6 +40,7 @@ require (
 	github.com/jackc/pgx/v5 v5.4.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
