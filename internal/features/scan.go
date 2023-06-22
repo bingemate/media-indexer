@@ -3,11 +3,13 @@ package features
 import (
 	"errors"
 	"fmt"
+	objectStorage "github.com/bingemate/media-go-pkg/object-storage"
 	"github.com/bingemate/media-indexer/internal/repository"
 	"github.com/bingemate/media-indexer/pkg"
 	"log"
 	"os"
 	"path"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -18,6 +20,7 @@ type MovieScanner struct {
 	destination     string                      // Destination directory path to move the found movies.
 	mediaClient     pkg.MediaClient             // Media client object to search for movies on TMDB.
 	mediaRepository *repository.MediaRepository // Media repository object to save the media files and their details.
+	objectStorage   objectStorage.ObjectStorage // Object storage object to upload the media files.
 }
 
 // MovieScannerResult represents a struct that holds the results of scanning and moving movie files.
@@ -32,6 +35,7 @@ type TVScanner struct {
 	destination     string                      // Destination directory path to move the found TV shows.
 	mediaClient     pkg.MediaClient             // Media client object to search for TV shows on TMDB.
 	mediaRepository *repository.MediaRepository // Media repository object to save the media files and their details.
+	objectStorage   objectStorage.ObjectStorage // Object storage object to upload the media files.
 }
 
 // TVScannerResult represents a struct that holds the results of scanning and moving TV show files.
@@ -41,22 +45,24 @@ type TVScannerResult struct {
 }
 
 // NewMovieScanner returns a new instance of MovieScanner with given source directory, target directory, and TMDB API key.
-func NewMovieScanner(source, destination string, mediaClient pkg.MediaClient, mediaRepository *repository.MediaRepository) *MovieScanner {
+func NewMovieScanner(source, destination string, mediaClient pkg.MediaClient, mediaRepository *repository.MediaRepository, objectStorage objectStorage.ObjectStorage) *MovieScanner {
 	return &MovieScanner{
 		source:          source,
 		destination:     destination,
 		mediaClient:     mediaClient,
 		mediaRepository: mediaRepository,
+		objectStorage:   objectStorage,
 	}
 }
 
 // NewTVScanner returns a new instance of TVScanner with given source directory, target directory, and TMDB API key.
-func NewTVScanner(source, destination string, mediaClient pkg.MediaClient, mediaRepository *repository.MediaRepository) *TVScanner {
+func NewTVScanner(source, destination string, mediaClient pkg.MediaClient, mediaRepository *repository.MediaRepository, objectStorage objectStorage.ObjectStorage) *TVScanner {
 	return &TVScanner{
 		source:          source,
 		destination:     destination,
 		mediaClient:     mediaClient,
 		mediaRepository: mediaRepository,
+		objectStorage:   objectStorage,
 	}
 }
 
@@ -337,6 +343,25 @@ func (s *MovieScanner) processMovies(movieList *pkg.AtomicMovieList, destination
 			log.Printf("Failed to remove %s : %s", source, err.Error())
 			pkg.AppendJobLog(fmt.Sprintf("Failed to remove %s : %s", source, err.Error()))
 		}
+		// Upload destination to S3
+		log.Printf("Uploading movie %d to S3...", media.ID)
+		pkg.AppendJobLog(fmt.Sprintf("Uploading movie %d to S3...", media.ID))
+		err = s.objectStorage.UploadMediaFiles(
+			path.Join("movies", strconv.Itoa(media.ID)),
+			path.Join(destination, strconv.Itoa(media.ID)),
+		)
+		if err != nil {
+			log.Printf("Failed to upload %s to S3 : %s", destination, err.Error())
+			pkg.AppendJobLog(fmt.Sprintf("Failed to upload %s to S3 : %s", destination, err.Error()))
+		}
+		// Remove destination from local
+		log.Printf("Removing %s from local storage", path.Join(destination, strconv.Itoa(media.ID)))
+		pkg.AppendJobLog(fmt.Sprintf("Removing %s from local storage", path.Join(destination, strconv.Itoa(media.ID))))
+		err = os.RemoveAll(path.Join(destination, strconv.Itoa(media.ID)))
+		if err != nil {
+			log.Printf("Failed to remove %s : %s", path.Join(destination, strconv.Itoa(media.ID)), err.Error())
+			pkg.AppendJobLog(fmt.Sprintf("Failed to remove %s : %s", path.Join(destination, strconv.Itoa(media.ID)), err.Error()))
+		}
 	}
 	return nil
 }
@@ -359,7 +384,7 @@ func (s *TVScanner) processTVEpisodes(tvList *pkg.AtomicTVEpisodeList, destinati
 			return err
 		}
 		log.Printf("Processed %-60s - %s - %s s%02de%02d\nTook %s", mediaFile.Filename, media.TvShowName, media.Year(), mediaFile.Season, mediaFile.Episode, time.Since(now))
-		pkg.AppendJobLog(fmt.Sprintf("Processed %-60s - %s - %s s%02de%02d\nTook %s", mediaFile.Filename, media.TvShowName, media.Year(), mediaFile.Season, mediaFile.Episode, time.Since(now)))
+		pkg.AppendJobLog(fmt.Sprintf("Processed %-60s - %s - %s\nTook %s", mediaFile.Filename, media.TvShowName, media.Year(), time.Since(now)))
 
 		log.Printf("Removing %s", source)
 		pkg.AppendJobLog(fmt.Sprintf("Removing %s", source))
@@ -367,6 +392,25 @@ func (s *TVScanner) processTVEpisodes(tvList *pkg.AtomicTVEpisodeList, destinati
 		if err != nil {
 			log.Printf("Failed to remove %s : %s", source, err.Error())
 			pkg.AppendJobLog(fmt.Sprintf("Failed to remove %s : %s", source, err.Error()))
+		}
+		// Upload destination to S3
+		log.Printf("Uploading episode %d to S3...", media.ID)
+		pkg.AppendJobLog(fmt.Sprintf("Uploading episode %d to S3...", media.ID))
+		err = s.objectStorage.UploadMediaFiles(
+			path.Join("tv-shows", strconv.Itoa(media.ID)),
+			path.Join(destination, strconv.Itoa(media.ID)),
+		)
+		if err != nil {
+			log.Printf("Failed to upload %s to S3 : %s", destination, err.Error())
+			pkg.AppendJobLog(fmt.Sprintf("Failed to upload %s to S3 : %s", destination, err.Error()))
+		}
+		// Remove destination from local
+		log.Printf("Removing %s from local storage", path.Join(destination, strconv.Itoa(media.ID)))
+		pkg.AppendJobLog(fmt.Sprintf("Removing %s from local storage", path.Join(destination, strconv.Itoa(media.ID))))
+		err = os.RemoveAll(path.Join(destination, strconv.Itoa(media.ID)))
+		if err != nil {
+			log.Printf("Failed to remove %s : %s", path.Join(destination, strconv.Itoa(media.ID)), err.Error())
+			pkg.AppendJobLog(fmt.Sprintf("Failed to remove %s : %s", path.Join(destination, strconv.Itoa(media.ID)), err.Error()))
 		}
 	}
 	return nil
