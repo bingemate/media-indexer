@@ -23,6 +23,10 @@ type Env struct {
 	DBName            string `env:"DB_NAME" envDefault:"postgres"`
 	RedisHost         string `env:"REDIS_HOST" envDefault:"localhost:6379"`
 	RedisPassword     string `env:"REDIS_PASSWORD" envDefault:""`
+	S3AccessKeyId     string `env:"S3_ACCESS_KEY_ID" envDefault:""`
+	S3SecretAccessKey string `env:"S3_SECRET_ACCESS_KEY" envDefault:""`
+	S3BucketName      string `env:"S3_BUCKET_NAME" envDefault:""`
+	S3Endpoint        string `env:"S3_ENDPOINT" envDefault:"https://s3.fr-par.scw.cloud"`
 	ScanCron          string `env:"SCAN_CRON" envDefault:"*/15 * * * *"`
 }
 
