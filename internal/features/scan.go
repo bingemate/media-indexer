@@ -344,6 +344,7 @@ func (s *MovieScanner) processMovies(movieList *pkg.AtomicMovieList, destination
 			pkg.AppendJobLog(fmt.Sprintf("Failed to remove %s : %s", source, err.Error()))
 		}
 		// Upload destination to S3
+		now = time.Now()
 		log.Printf("Uploading movie %d to S3...", media.ID)
 		pkg.AppendJobLog(fmt.Sprintf("Uploading movie %d to S3...", media.ID))
 		err = s.objectStorage.UploadMediaFiles(
@@ -353,6 +354,9 @@ func (s *MovieScanner) processMovies(movieList *pkg.AtomicMovieList, destination
 		if err != nil {
 			log.Printf("Failed to upload %s to S3 : %s", destination, err.Error())
 			pkg.AppendJobLog(fmt.Sprintf("Failed to upload %s to S3 : %s", destination, err.Error()))
+		} else {
+			log.Printf("Uploaded %s to S3. Took %v", destination, time.Since(now))
+			pkg.AppendJobLog(fmt.Sprintf("Uploaded %s to S3. Took %v", destination, time.Since(now)))
 		}
 		// Remove destination from local
 		log.Printf("Removing %s from local storage", path.Join(destination, strconv.Itoa(media.ID)))
@@ -361,6 +365,9 @@ func (s *MovieScanner) processMovies(movieList *pkg.AtomicMovieList, destination
 		if err != nil {
 			log.Printf("Failed to remove %s : %s", path.Join(destination, strconv.Itoa(media.ID)), err.Error())
 			pkg.AppendJobLog(fmt.Sprintf("Failed to remove %s : %s", path.Join(destination, strconv.Itoa(media.ID)), err.Error()))
+		} else {
+			log.Printf("Removed %s from local storage", path.Join(destination, strconv.Itoa(media.ID)))
+			pkg.AppendJobLog(fmt.Sprintf("Removed %s from local storage", path.Join(destination, strconv.Itoa(media.ID))))
 		}
 	}
 	return nil
