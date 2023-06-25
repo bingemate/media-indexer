@@ -7,6 +7,9 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 )
 
 var deleteRegexes = []*regexp.Regexp{
@@ -15,14 +18,22 @@ var deleteRegexes = []*regexp.Regexp{
 }
 
 var spaceRegexes = []*regexp.Regexp{
-	regexp.MustCompile(`[\W_]+`), // regex pour supprimer les caractères spéciaux
+	regexp.MustCompile(`[^\pL\s_]+`), // regex pour supprimer les caractères spéciaux
 }
-
-var nonASCIIRegex = regexp.MustCompile(`[^\x00-\x7F]+`) // regex pour remplacer les caractères non ASCII
 
 var extractDateRegex = regexp.MustCompile(`^(.+?)(\d{4}?).*(\d{4}.*)?$`) // Expression régulière pour extraire le nom et l'année du fichier
 
 var tvShowRegex = regexp.MustCompile(`^(.+?)(?:[sS])?(\d{1,})?(?:[eExX])?(\d{2,})(?:.*|$)`) // regex to extract title, season number, and episode number
+
+var isMn = func(r rune) bool {
+	return unicode.Is(unicode.Mn, r) // Mn: nonspacing marks
+}
+
+func removeAccents(s string) string {
+	t := transform.Chain(norm.NFD, transform.RemoveFunc(isMn), norm.NFC)
+	result, _, _ := transform.String(t, s)
+	return result
+}
 
 // SanitizeMovieFilename sanitize a movie filename by removing non ASCII characters, removing non-relevant information, returning the name and the year
 func SanitizeMovieFilename(filename string) (string, string) {
@@ -30,11 +41,7 @@ func SanitizeMovieFilename(filename string) (string, string) {
 	for _, regex := range spaceRegexes {
 		filename = regex.ReplaceAllString(filename, " ")
 	}
-	filename = nonASCIIRegex.ReplaceAllStringFunc(filename, func(s string) string {
-		return strings.ToLower(strings.TrimFunc(s, func(r rune) bool {
-			return !unicode.IsLetter(r)
-		}))
-	})
+	filename = removeAccents(filename)
 
 	for _, regex := range deleteRegexes {
 		filename = regex.ReplaceAllString(filename, "")
@@ -55,18 +62,14 @@ func SanitizeTVShowFilename(filename string) (string, int, int) {
 	for _, regex := range spaceRegexes {
 		filename = regex.ReplaceAllString(filename, " ")
 	}
-	filename = nonASCIIRegex.ReplaceAllStringFunc(filename, func(s string) string {
-		return strings.ToLower(strings.TrimFunc(s, func(r rune) bool {
-			return !unicode.IsLetter(r)
-		}))
-	})
+	filename = removeAccents(filename)
 
 	for _, regex := range deleteRegexes {
 		filename = regex.ReplaceAllString(filename, "")
 	}
 
 	matches := tvShowRegex.FindStringSubmatch(filename)
-	if len(matches) < 3 {
+	if len(matches) < 4 {
 		return filename, 0, 0
 	}
 

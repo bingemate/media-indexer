@@ -149,7 +149,7 @@ func extractAudioStream(data *ffprobe.ProbeData, mediaData *MediaData) error {
 		// Parse the bitrate of the audio stream
 		bitrate, err := strconv.ParseFloat(audioStream.BitRate, 64)
 		if err != nil {
-			log.Println("Error parsing audio bitrate:", err)
+			//log.Println("Error parsing audio bitrate:", err)
 			bitrate = 0
 		}
 
