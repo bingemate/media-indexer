@@ -18,7 +18,7 @@ var deleteRegexes = []*regexp.Regexp{
 }
 
 var spaceRegexes = []*regexp.Regexp{
-	regexp.MustCompile(`[^\pL\s_]+`), // regex pour supprimer les caractères spéciaux
+	regexp.MustCompile(`[^\pL\s_\d]+`), // regex pour supprimer les caractères spéciaux sauf les chiffres
 }
 
 var extractDateRegex = regexp.MustCompile(`^(.+?)(\d{4}?).*(\d{4}.*)?$`) // Expression régulière pour extraire le nom et l'année du fichier
