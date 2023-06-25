@@ -144,20 +144,23 @@ func (s *MovieScanner) scanMovieFolder() (*[]pkg.MovieFile, error) {
 }
 
 func (s *MovieScanner) retrieveMovieList(mediaFiles *[]pkg.MovieFile) *pkg.AtomicMovieList {
-	// Initializes a WaitGroup and an AtomicMovieList
+	// Initialize a WaitGroup and an AtomicMovieList
 	var wg sync.WaitGroup
 	var atomicMovieList = pkg.NewAtomicMovieList()
-	wg.Add(len(*mediaFiles))
 
-	// Iterates through each media file and spawns a goroutine to search its information
+	// Create a semaphore channel to limit the number of goroutines
+	sem := make(chan bool, 4)
+
 	for _, mediaFile := range *mediaFiles {
+		sem <- true
+		wg.Add(1)
 		go func(mediaFile pkg.MovieFile) {
 			defer wg.Done()
+			defer func() { <-sem }()
 
 			log.Printf("Searching for movie information for file %s...", mediaFile.Filename)
 			pkg.AppendJobLog(fmt.Sprintf("Searching for movie information for file %s...", mediaFile.Filename))
 
-			// Searches for the movie information for the current media file and adds the result to the AtomicMovieList
 			media, ok := searchMovie(&mediaFile, s.mediaClient)
 			if !ok {
 				log.Printf("Failed to find movie information for file %s.", mediaFile.Filename)
@@ -168,7 +171,10 @@ func (s *MovieScanner) retrieveMovieList(mediaFiles *[]pkg.MovieFile) *pkg.Atomi
 		}(mediaFile)
 	}
 
-	// Waits for all goroutines to finish
+	for i := 0; i < cap(sem); i++ {
+		sem <- true
+	}
+
 	wg.Wait()
 
 	log.Println("Movie scan complete.")
@@ -238,21 +244,22 @@ func (s *TVScanner) buildTVScannerResult(atomicMediaList *pkg.AtomicTVEpisodeLis
 }
 
 func (s *TVScanner) retrieveTvList(mediaFiles *[]pkg.TVShowFile) *pkg.AtomicTVEpisodeList {
-	// Initializes a WaitGroup and an AtomicMovieList
 	var wg sync.WaitGroup
 	var atomicMediaList = pkg.NewAtomicTVEpisodeList()
-	wg.Add(len(*mediaFiles))
 
-	// Iterates through each media file and spawns a goroutine to search its information
+	// Create a semaphore channel to limit the number of goroutines
+	sem := make(chan bool, 4)
+
 	for _, mediaFile := range *mediaFiles {
+		sem <- true
+		wg.Add(1)
 		go func(mediaFile pkg.TVShowFile) {
 			defer wg.Done()
+			defer func() { <-sem }()
 
-			// Logs that the function is searching for TV show information for the current file
 			log.Printf("Searching for TV show information for file %s...", mediaFile.Filename)
 			pkg.AppendJobLog(fmt.Sprintf("Searching for TV show information for file %s...", mediaFile.Filename))
 
-			// Searches for the TV show information for the current media file and adds the result to the AtomicMovieList
 			media, ok := searchTVEpisode(&mediaFile, s.mediaClient)
 			if !ok {
 				log.Printf("Failed to find TV show information for file %s.", mediaFile.Filename)
@@ -267,10 +274,12 @@ func (s *TVScanner) retrieveTvList(mediaFiles *[]pkg.TVShowFile) *pkg.AtomicTVEp
 		}(mediaFile)
 	}
 
-	// Waits for all goroutines to finish
+	for i := 0; i < cap(sem); i++ {
+		sem <- true
+	}
+
 	wg.Wait()
 
-	// Logs that the TV show scan is complete
 	log.Println("TV show scan complete.")
 	pkg.AppendJobLog("TV show scan complete.")
 	return atomicMediaList

@@ -17,15 +17,16 @@ import (
 )
 
 type MediaRepository struct {
-	db            *gorm.DB
-	introFilePath string
+	db               *gorm.DB
+	introFilePath    string
+	intro219FilePath string
 }
 
-func NewMediaRepository(db *gorm.DB, introFilePath string) *MediaRepository {
+func NewMediaRepository(db *gorm.DB, introFilePath string, intro219FilePath string) *MediaRepository {
 	if db == nil {
 		log.Fatal("db is nil")
 	}
-	return &MediaRepository{db: db, introFilePath: introFilePath}
+	return &MediaRepository{db: db, introFilePath: introFilePath, intro219FilePath: intro219FilePath}
 }
 
 func (r *MediaRepository) IndexMovie(movie pkg.Movie, fileSource, destinationPath string) error {
@@ -46,7 +47,7 @@ func (r *MediaRepository) IndexMovie(movie pkg.Movie, fileSource, destinationPat
 	}
 
 	// Transcode movie here and retrieve file destination infos
-	response, err := transcoder.ProcessFileTranscode(fileSource, r.introFilePath, strconv.Itoa(movie.ID), destinationPath, "15", "1280:720")
+	response, err := transcoder.ProcessFileTranscode(fileSource, r.introFilePath, r.intro219FilePath, strconv.Itoa(movie.ID), destinationPath, "15", "1280:720", "1920:816")
 	if err != nil {
 		return err
 	}
@@ -107,7 +108,7 @@ func (r *MediaRepository) IndexTvEpisode(tvEpisode pkg.TVEpisode, fileSource, de
 	}
 
 	// Transcode episode here and retrieve file destination infos
-	response, err := transcoder.ProcessFileTranscode(fileSource, r.introFilePath, strconv.Itoa(tvEpisode.ID), destinationPath, "15", "1280:720")
+	response, err := transcoder.ProcessFileTranscode(fileSource, r.introFilePath, r.intro219FilePath, strconv.Itoa(tvEpisode.ID), destinationPath, "15", "1280:720", "1920:816")
 	if err != nil {
 		return err
 	}
