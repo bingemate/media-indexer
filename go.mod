@@ -3,7 +3,7 @@ module github.com/bingemate/media-indexer
 go 1.20
 
 require (
-	github.com/bingemate/media-go-pkg v1.5.8
+	github.com/bingemate/media-go-pkg v1.6.1
 	github.com/caarlos0/env/v8 v8.0.0
 	github.com/gabriel-vasile/mimetype v1.4.2
 	github.com/gin-gonic/gin v1.9.1
@@ -11,6 +11,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.7.0
 	github.com/swaggo/swag v1.16.1
+	golang.org/x/text v0.10.0
 	gopkg.in/vansante/go-ffprobe.v2 v2.1.1
 	gorm.io/driver/postgres v1.5.2
 	gorm.io/gorm v1.25.1
@@ -61,7 +62,6 @@ require (
 	golang.org/x/crypto v0.10.0 // indirect
 	golang.org/x/net v0.11.0 // indirect
 	golang.org/x/sys v0.9.0 // indirect
-	golang.org/x/text v0.10.0 // indirect
 	golang.org/x/tools v0.10.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
