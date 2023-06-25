@@ -47,7 +47,7 @@ func (r *MediaRepository) IndexMovie(movie pkg.Movie, fileSource, destinationPat
 	}
 
 	// Transcode movie here and retrieve file destination infos
-	response, err := transcoder.ProcessFileTranscode(fileSource, r.introFilePath, r.intro219FilePath, strconv.Itoa(movie.ID), destinationPath, "15", "1280:720", "1920:816")
+	response, err := transcoder.ProcessFileTranscode(fileSource, r.introFilePath, r.intro219FilePath, strconv.Itoa(movie.ID), destinationPath, "10", "1280:720", "1920:816")
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (r *MediaRepository) IndexTvEpisode(tvEpisode pkg.TVEpisode, fileSource, de
 	}
 
 	// Transcode episode here and retrieve file destination infos
-	response, err := transcoder.ProcessFileTranscode(fileSource, r.introFilePath, r.intro219FilePath, strconv.Itoa(tvEpisode.ID), destinationPath, "15", "1280:720", "1920:816")
+	response, err := transcoder.ProcessFileTranscode(fileSource, r.introFilePath, r.intro219FilePath, strconv.Itoa(tvEpisode.ID), destinationPath, "10", "1280:720", "1920:816")
 	if err != nil {
 		return err
 	}
