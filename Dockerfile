@@ -22,6 +22,7 @@ ENV GOMEMLIMIT=200MiB \
     PORT=8080 \
     LOG_FILE=/app/logs/golang-app.log \
     INTRO_FILE_PATH=/app/assets/intro.mkv \
+    INTRO_21_9_FILE_PATH=/app/assets/intro_21-9.mkv \
     MOVIE_SOURCE_FOLDER=/app/movies-source \
     MOVIE_TARGET_FOLDER=/app/media-target/movies \
     TV_SOURCE_FOLDER=/app/tvshows-source \

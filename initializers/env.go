@@ -10,6 +10,7 @@ type Env struct {
 	Port              string `env:"PORT" envDefault:"8080"`
 	LogFile           string `env:"LOG_FILE" envDefault:"gin.log"`
 	IntroFilePath     string `env:"INTRO_FILE_PATH" envDefault:"app/assets/intro.mkv"`
+	Intro219FilePath  string `env:"INTRO_21_9_FILE_PATH" envDefault:"app/assets/intro_21-9.mp4"`
 	MovieSourceFolder string `env:"MOVIE_SOURCE_FOLDER" envDefault:"./"`
 	MovieTargetFolder string `env:"MOVIE_TARGET_FOLDER" envDefault:"./"`
 	TvSourceFolder    string `env:"TV_SOURCE_FOLDER" envDefault:"./"`
