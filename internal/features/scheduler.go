@@ -27,6 +27,10 @@ func ScheduleScanner(cronStr string, movieScanner *MovieScanner, tvScanner *TVSc
 		if err != nil {
 			log.Println("Error scanning movies:", err)
 		}
+		for IsJobRunning() {
+			time.Sleep(10 * time.Second)
+		}
+
 		err = tvScanner.ScanTV()
 		if err != nil {
 			log.Println("Error scanning tvs:", err)
