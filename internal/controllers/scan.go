@@ -12,6 +12,9 @@ func InitScanController(engine *gin.RouterGroup, movieScanner *features.MovieSca
 	engine.POST("/tv", func(c *gin.Context) {
 		scanTvShow(c, tvScanner)
 	})
+	engine.POST("/all", func(c *gin.Context) {
+		scanAll(c, movieScanner, tvScanner)
+	})
 }
 
 // @Summary		Scan Movies
@@ -41,6 +44,31 @@ func scanMovie(c *gin.Context, movieScanner *features.MovieScanner) {
 // @Router			/scan/tv [post]
 func scanTvShow(c *gin.Context, tvScanner *features.TVScanner) {
 	var err = tvScanner.ScanTV()
+	if err != nil {
+		c.JSON(500, errorResponse{
+			Error: err.Error(),
+		})
+		return
+	}
+	c.JSON(200, "Scan started")
+}
+
+// @Summary		Scan Movies and TV Shows
+// @Description	Scan Movies and TV Shows from the configured folder
+// @Tags			Scan
+// @Produce		json
+// @Success		200	{string} string "Scan started"
+// @Failure		500	{object} errorResponse
+// @Router			/scan/all [post]
+func scanAll(c *gin.Context, movieScanner *features.MovieScanner, tvScanner *features.TVScanner) {
+	var err = movieScanner.ScanMovies()
+	if err != nil {
+		c.JSON(500, errorResponse{
+			Error: err.Error(),
+		})
+		return
+	}
+	err = tvScanner.ScanTV()
 	if err != nil {
 		c.JSON(500, errorResponse{
 			Error: err.Error(),

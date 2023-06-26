@@ -125,6 +125,32 @@ const docTemplate = `{
                 }
             }
         },
+        "/scan/all": {
+            "post": {
+                "description": "Scan Movies and TV Shows from the configured folder",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Scan"
+                ],
+                "summary": "Scan Movies and TV Shows",
+                "responses": {
+                    "200": {
+                        "description": "Scan started",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/scan/movie": {
             "post": {
                 "description": "Scan movies from the configured folder",
