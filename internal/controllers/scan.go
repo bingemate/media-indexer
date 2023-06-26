@@ -3,6 +3,7 @@ package controllers
 import (
 	"github.com/bingemate/media-indexer/internal/features"
 	"github.com/gin-gonic/gin"
+	"time"
 )
 
 func InitScanController(engine *gin.RouterGroup, movieScanner *features.MovieScanner, tvScanner *features.TVScanner) {
@@ -61,19 +62,19 @@ func scanTvShow(c *gin.Context, tvScanner *features.TVScanner) {
 // @Failure		500	{object} errorResponse
 // @Router			/scan/all [post]
 func scanAll(c *gin.Context, movieScanner *features.MovieScanner, tvScanner *features.TVScanner) {
-	var err = movieScanner.ScanMovies()
-	if err != nil {
+	if features.IsJobRunning() {
 		c.JSON(500, errorResponse{
-			Error: err.Error(),
+			Error: "Scan already running",
 		})
 		return
 	}
-	err = tvScanner.ScanTV()
-	if err != nil {
-		c.JSON(500, errorResponse{
-			Error: err.Error(),
-		})
-		return
-	}
+	go func() {
+		movieScanner.ScanMovies()
+		for features.IsJobRunning() {
+			time.Sleep(10 * time.Second)
+		}
+		tvScanner.ScanTV()
+	}()
+
 	c.JSON(200, "Scan started")
 }
