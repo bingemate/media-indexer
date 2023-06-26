@@ -95,11 +95,10 @@ func (s *MovieScanner) ScanMovies() error {
 		if err != nil {
 			log.Printf("Failed to process movies to %s: %v", s.destination, err)
 			pkg.AppendJobLog(fmt.Sprintf("Failed to process movies to %s: %v", s.destination, err))
-			return
 		}
 
-		log.Printf("Successfully processed %d movies to %s.", len(*result), s.destination)
-		pkg.AppendJobLog(fmt.Sprintf("Successfully processed %d movies to %s.", len(*result), s.destination))
+		log.Printf("Processed %d movies to %s.", len(*result), s.destination)
+		pkg.AppendJobLog(fmt.Sprintf("Processed %d movies to %s.", len(*result), s.destination))
 
 		/*err = pkg.ClearFolderContent(s.source)
 		if err != nil {
@@ -213,11 +212,10 @@ func (s *TVScanner) ScanTV() error {
 		if err != nil {
 			log.Printf("Failed to process TV shows to %s: %v", s.destination, err)
 			pkg.AppendJobLog(fmt.Sprintf("Failed to process TV shows to %s: %v", s.destination, err))
-			return
 		}
 
-		log.Printf("Successfully processed %d TV shows to %s.", len(*result), s.destination)
-		pkg.AppendJobLog(fmt.Sprintf("Successfully processed %d TV shows to %s.", len(*result), s.destination))
+		log.Printf("Processed %d TV shows to %s.", len(*result), s.destination)
+		pkg.AppendJobLog(fmt.Sprintf("Processed %d TV shows to %s.", len(*result), s.destination))
 
 		/*err = pkg.ClearFolderContent(s.source)
 		if err != nil {
