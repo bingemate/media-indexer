@@ -3,7 +3,7 @@ module github.com/bingemate/media-indexer
 go 1.20
 
 require (
-	github.com/bingemate/media-go-pkg v1.6.14
+	github.com/bingemate/media-go-pkg v1.6.17
 	github.com/caarlos0/env/v8 v8.0.0
 	github.com/gabriel-vasile/mimetype v1.4.2
 	github.com/gin-gonic/gin v1.9.1
@@ -14,7 +14,7 @@ require (
 	golang.org/x/text v0.10.0
 	gopkg.in/vansante/go-ffprobe.v2 v2.1.1
 	gorm.io/driver/postgres v1.5.2
-	gorm.io/gorm v1.25.1
+	gorm.io/gorm v1.25.2
 )
 
 require (
