@@ -14,7 +14,7 @@ require (
 	golang.org/x/text v0.10.0
 	gopkg.in/vansante/go-ffprobe.v2 v2.1.1
 	gorm.io/driver/postgres v1.5.2
-	gorm.io/gorm v1.25.1
+	gorm.io/gorm v1.25.2
 )
 
 require (
