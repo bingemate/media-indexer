@@ -1,7 +1,5 @@
 github.com/KyleBanks/depth v1.2.1 h1:5h8fQADFrWtarTdtDudMmGsC7GPbOAu6RVB3ffsVFHc=
 github.com/KyleBanks/depth v1.2.1/go.mod h1:jzSb9d0L43HxTQfT+oSA1EEp2q+ne2uh6XgeJcm8brE=
-github.com/PuerkitoBio/purell v1.1.1/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbtSwDGJws/X0=
-github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
 github.com/asticode/go-astikit v0.20.0/go.mod h1:h4ly7idim1tNhaVkdVBeXQZEE3L0xblP7fCWbgwipF0=
 github.com/asticode/go-astikit v0.30.0/go.mod h1:h4ly7idim1tNhaVkdVBeXQZEE3L0xblP7fCWbgwipF0=
 github.com/asticode/go-astikit v0.40.0 h1:iDt/boQR0LhDeUMM24tcoqIT3Ie+oL9MzbDfIcGlDsM=
@@ -13,10 +11,8 @@ github.com/asticode/go-astits v1.11.0 h1:GTHUXht0ZXAJXsVbsLIcyfHr1Bchi4QQwMARw2Z
 github.com/asticode/go-astits v1.11.0/go.mod h1:QSHmknZ51pf6KJdHKZHJTLlMegIrhega3LPWz3ND/iI=
 github.com/aws/aws-sdk-go v1.44.287 h1:CUq2/h0gZ2LOCF61AgQSEMPMfas4gTiQfHBO88gGET0=
 github.com/aws/aws-sdk-go v1.44.287/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
-github.com/bingemate/media-go-pkg v1.6.14 h1:JjzglHPAV9tppmN412TBI6/6ph9RNFCMs57FHJvXvt8=
-github.com/bingemate/media-go-pkg v1.6.14/go.mod h1:OmpUs7bI3ANXxkXGRNyuKeuXDrRh33sZU9r35r27mco=
-github.com/bingemate/media-go-pkg v1.6.17 h1:QanMk1RqNyrHUYy/aF2tJzdBqPfBKCmq4iynKU58z4M=
-github.com/bingemate/media-go-pkg v1.6.17/go.mod h1:OmpUs7bI3ANXxkXGRNyuKeuXDrRh33sZU9r35r27mco=
+github.com/bingemate/media-go-pkg v1.6.19 h1:kL3eyQaxXssCSZCyZJH0Y7XDt4bctOixd+3mmkgrcrI=
+github.com/bingemate/media-go-pkg v1.6.19/go.mod h1:OmpUs7bI3ANXxkXGRNyuKeuXDrRh33sZU9r35r27mco=
 github.com/bytedance/sonic v1.5.0/go.mod h1:ED5hyg4y6t3/9Ku1R6dU/4KyJ48DZ4jPhfY1O2AihPM=
 github.com/bytedance/sonic v1.9.1 h1:6iJ6NqdoxCDr6mbY8h18oSO+cShGSMRGCEo7F2h0x8s=
 github.com/bytedance/sonic v1.9.1/go.mod h1:i736AoUSYt75HyZLoJW9ERYxcy6eaN6h4BZXU064P/U=
