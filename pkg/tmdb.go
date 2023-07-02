@@ -191,7 +191,7 @@ func (m *mediaClient) SearchTVShow(query string, season, episode int) (TVEpisode
 		if err != nil {
 			return TVEpisode{}, err
 		}*/
-	tvShows, err := m.client.SearchTVShows(query, 1)
+	tvShows, err := m.client.SearchTVShows(query, 1, false)
 	if err != nil {
 		return TVEpisode{}, err
 	}
