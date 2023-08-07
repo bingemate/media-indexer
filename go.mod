@@ -11,7 +11,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.7.0
 	github.com/swaggo/swag v1.16.1
-	golang.org/x/text v0.10.0
+	golang.org/x/text v0.12.0
 	gopkg.in/vansante/go-ffprobe.v2 v2.1.1
 	gorm.io/driver/postgres v1.5.2
 	gorm.io/gorm v1.25.2
