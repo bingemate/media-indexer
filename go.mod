@@ -10,7 +10,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.7.0
-	github.com/swaggo/swag v1.16.1
+	github.com/swaggo/swag v1.16.2
 	golang.org/x/text v0.10.0
 	gopkg.in/vansante/go-ffprobe.v2 v2.1.1
 	gorm.io/driver/postgres v1.5.2
